@@ -21,24 +21,14 @@ jobs:
           ISSUE_BODY="${{ github.event.issue.body }}"
           APP_ID=$(echo "$ISSUE_BODY" | grep -oP '(?<=App ID: ).*')
           ARTWORK_TYPE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Artwork Type: ).*')
-          CHANGE_IMAGE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Change an existing image: ).*')
-          CUSTOM_IMAGE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Upload Custom Image: ).*')
           echo "APP_ID=$APP_ID" >> $GITHUB_ENV
           echo "ARTWORK_TYPE=$ARTWORK_TYPE" >> $GITHUB_ENV
-          echo "CHANGE_IMAGE=$CHANGE_IMAGE" >> $GITHUB_ENV
-          echo "CUSTOM_IMAGE=$CUSTOM_IMAGE" >> $GITHUB_ENV
 
       - name: Fetch game/software details from Steam API
         id: fetch_details
         run: |
           RESPONSE=$(curl -s "https://store.steampowered.com/api/appdetails?appids=${{ env.APP_ID }}&key=${{ secrets.STEAMAPI }}")
           echo "$RESPONSE" | jq -r ".${{ env.APP_ID }}.data | {name: .name, release_date: .release_date.date, publisher: .publishers[0], image: .header_image}" > details.json
-
-      - name: Validate custom image
-        if: ${{ env.CUSTOM_IMAGE != '' }}
-        run: |
-          echo "Custom image provided: ${{ env.CUSTOM_IMAGE }}"
-          # Admin validation logic here
 
       - name: Generate HTML and CSS files
         run: |
@@ -47,10 +37,6 @@ jobs:
           RELEASE_DATE=$(echo $DETAILS | jq -r '.release_date')
           PUBLISHER=$(echo $DETAILS | jq -r '.publisher')
           IMAGE=$(echo $DETAILS | jq -r '.image')
-
-          if [ "${{ env.CUSTOM_IMAGE }}" != "" ]; then
-              IMAGE=${{ env.CUSTOM_IMAGE }}
-          fi
 
           for TYPE in "" "_hero" "p"; do
               cat <<EOF > artwork${TYPE}.html
