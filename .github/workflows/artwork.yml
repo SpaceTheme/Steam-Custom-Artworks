@@ -19,8 +19,8 @@ jobs:
         id: extract_details
         run: |
           ISSUE_BODY="${{ github.event.issue.body }}"
-          APP_ID=$(echo "$ISSUE_BODY" | grep -oP '(?<=App ID: ).*')
-          ARTWORK_TYPE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Artwork Type: ).*')
+          APP_ID=$(echo "$ISSUE_BODY" | grep -oP '(?<=App ID\s*\n\s*).*')
+          ARTWORK_TYPE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Artwork Type\s*\n\s*).*')
           echo "APP_ID=$APP_ID" >> $GITHUB_ENV
           echo "ARTWORK_TYPE=$ARTWORK_TYPE" >> $GITHUB_ENV
 
