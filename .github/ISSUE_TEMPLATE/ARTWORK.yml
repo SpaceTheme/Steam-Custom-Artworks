@@ -12,7 +12,6 @@ body:
       - Software
   validations:
     required: true
-
 - type: checkboxes
   id: change_image
   attributes:
@@ -20,13 +19,11 @@ body:
     options:
     - label: Yes
       required: false
-
 - type: textarea
   id: custom_image
   attributes:
     label: Upload Custom Image (Not recommended) - Leave empty to auto-generate
     description: Paste, drag & drop or upload your image here. - Only github upload links are allowed.
-
 - type: input
   id: app_id
   attributes:
