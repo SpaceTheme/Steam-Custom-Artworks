@@ -17,7 +17,7 @@ body:
   attributes:
     label: Change an existing image
     options:
-    - label: Yes
+    - label: "Yes"
       required: false
 - type: textarea
   id: custom_image
