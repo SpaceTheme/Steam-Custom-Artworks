@@ -1,101 +1,101 @@
 name: Generate Artwork
 
 on:
-    issues:
-        types: [opened, edited]
-        filters:
-            labels:
-                - request
+  issues:
+    types: 
+      - opened
+      - edited
 
 jobs:
-    generate-artwork:
-        runs-on: ubuntu-latest
+  generate-artwork:
+    if: contains(github.event.issue.labels.*.name, 'request')
+    runs-on: ubuntu-latest
 
-        steps:
-        - name: Checkout repository
-            uses: actions/checkout@v2
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-        - name: Extract issue details
-            id: extract_details
-            run: |
-                ISSUE_BODY="${{ github.event.issue.body }}"
-                APP_ID=$(echo "$ISSUE_BODY" | grep -oP '(?<=App ID: ).*')
-                ARTWORK_TYPE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Artwork Type: ).*')
-                CHANGE_IMAGE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Change an existing image: ).*')
-                CUSTOM_IMAGE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Upload Custom Image: ).*')
-                echo "APP_ID=$APP_ID" >> $GITHUB_ENV
-                echo "ARTWORK_TYPE=$ARTWORK_TYPE" >> $GITHUB_ENV
-                echo "CHANGE_IMAGE=$CHANGE_IMAGE" >> $GITHUB_ENV
-                echo "CUSTOM_IMAGE=$CUSTOM_IMAGE" >> $GITHUB_ENV
+      - name: Extract issue details
+        id: extract_details
+        run: |
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          APP_ID=$(echo "$ISSUE_BODY" | grep -oP '(?<=App ID: ).*')
+          ARTWORK_TYPE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Artwork Type: ).*')
+          CHANGE_IMAGE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Change an existing image: ).*')
+          CUSTOM_IMAGE=$(echo "$ISSUE_BODY" | grep -oP '(?<=Upload Custom Image: ).*')
+          echo "APP_ID=$APP_ID" >> $GITHUB_ENV
+          echo "ARTWORK_TYPE=$ARTWORK_TYPE" >> $GITHUB_ENV
+          echo "CHANGE_IMAGE=$CHANGE_IMAGE" >> $GITHUB_ENV
+          echo "CUSTOM_IMAGE=$CUSTOM_IMAGE" >> $GITHUB_ENV
 
-        - name: Fetch game/software details from Steam API
-            id: fetch_details
-            run: |
-                RESPONSE=$(curl -s "https://store.steampowered.com/api/appdetails?appids=${{ env.APP_ID }}&key=${{ secrets.STEAMAPI }}")
-                echo "$RESPONSE" | jq -r ".${{ env.APP_ID }}.data | {name: .name, release_date: .release_date.date, publisher: .publishers[0], image: .header_image}" > details.json
+      - name: Fetch game/software details from Steam API
+        id: fetch_details
+        run: |
+          RESPONSE=$(curl -s "https://store.steampowered.com/api/appdetails?appids=${{ env.APP_ID }}&key=${{ secrets.STEAMAPI }}")
+          echo "$RESPONSE" | jq -r ".${{ env.APP_ID }}.data | {name: .name, release_date: .release_date.date, publisher: .publishers[0], image: .header_image}" > details.json
 
-        - name: Validate custom image
-            if: ${{ env.CUSTOM_IMAGE != '' }}
-            run: |
-                echo "Custom image provided: ${{ env.CUSTOM_IMAGE }}"
-                # Admin validation logic here
+      - name: Validate custom image
+        if: ${{ env.CUSTOM_IMAGE != '' }}
+        run: |
+          echo "Custom image provided: ${{ env.CUSTOM_IMAGE }}"
+          # Admin validation logic here
 
-        - name: Generate HTML and CSS files
-            run: |
-                DETAILS=$(cat details.json)
-                NAME=$(echo $DETAILS | jq -r '.name')
-                RELEASE_DATE=$(echo $DETAILS | jq -r '.release_date')
-                PUBLISHER=$(echo $DETAILS | jq -r '.publisher')
-                IMAGE=$(echo $DETAILS | jq -r '.image')
+      - name: Generate HTML and CSS files
+        run: |
+          DETAILS=$(cat details.json)
+          NAME=$(echo $DETAILS | jq -r '.name')
+          RELEASE_DATE=$(echo $DETAILS | jq -r '.release_date')
+          PUBLISHER=$(echo $DETAILS | jq -r '.publisher')
+          IMAGE=$(echo $DETAILS | jq -r '.image')
 
-                if [ "${{ env.CUSTOM_IMAGE }}" != "" ]; then
-                    IMAGE=${{ env.CUSTOM_IMAGE }}
-                fi
+          if [ "${{ env.CUSTOM_IMAGE }}" != "" ]; then
+              IMAGE=${{ env.CUSTOM_IMAGE }}
+          fi
 
-                for TYPE in "" "_hero" "p"; do
-                    cat <<EOF > artwork${TYPE}.html
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Artwork for $NAME</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; }
-                            .container { text-align: center; }
-                            .image { max-width: 100%; height: auto; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <h1>$NAME</h1>
-                            <p>Release Date: $RELEASE_DATE</p>
-                            <p>Publisher: $PUBLISHER</p>
-                            <img src="$IMAGE" alt="Artwork" class="image">
-                        </div>
-                    </body>
-                    </html>
-                    EOF
-                done
+          for TYPE in "" "_hero" "p"; do
+              cat <<EOF > artwork${TYPE}.html
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>Artwork for $NAME</title>
+                  <style>
+                      body { font-family: Arial, sans-serif; }
+                      .container { text-align: center; }
+                      .image { max-width: 100%; height: auto; }
+                  </style>
+              </head>
+              <body>
+                  <div class="container">
+                      <h1>$NAME</h1>
+                      <p>Release Date: $RELEASE_DATE</p>
+                      <p>Publisher: $PUBLISHER</p>
+                      <img src="$IMAGE" alt="Artwork" class="image">
+                  </div>
+              </body>
+              </html>
+              EOF
+          done
 
-        - name: Save artwork and JSON files
-            run: |
-                mkdir -p artworks
-                mv artwork.html artworks/${{ env.APP_ID }}.html
-                mv artwork_hero.html artworks/${{ env.APP_ID }}_hero.html
-                mv artworkp.html artworks/${{ env.APP_ID }}p.html
+      - name: Save artwork and JSON files
+        run: |
+          mkdir -p artworks
+          mv artwork.html artworks/${{ env.APP_ID }}.html
+          mv artwork_hero.html artworks/${{ env.APP_ID }}_hero.html
+          mv artworkp.html artworks/${{ env.APP_ID }}p.html
 
-                for TYPE in "" "_hero" "p"; do
-                    touch artworks/${{ env.APP_ID }}${TYPE}.png
-                done
+          for TYPE in "" "_hero" "p"; do
+              touch artworks/${{ env.APP_ID }}${TYPE}.png
+          done
 
-                cat <<EOF > artworks/${{ env.APP_ID }}.json
-                {
-                    "nVersion": 1,
-                    "logoPosition": {
-                        "pinnedPosition": "CenterCenter",
-                        "nWidthPct": 0,
-                        "nHeightPct": 0
-                    }
-                }
-                EOF
+          cat <<EOF > artworks/${{ env.APP_ID }}.json
+          {
+              "nVersion": 1,
+              "logoPosition": {
+                  "pinnedPosition": "CenterCenter",
+                  "nWidthPct": 0,
+                  "nHeightPct": 0
+              }
+          }
+          EOF
