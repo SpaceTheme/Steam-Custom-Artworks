@@ -6,7 +6,7 @@ body:
 - type: dropdown
   id: type
   attributes:
-    label: Type
+    label: Artwork Type
     options:
       - Game
       - Software
@@ -26,7 +26,7 @@ body:
   attributes:
     label: Upload Custom Image (Not recommended) - Leave empty to auto-generate
     description: Paste, drag & drop or upload your image here. - Only github upload links are allowed.
-    placeholder: ![image](https://github.com/user-attachments/assets/7dbaf908-149e-42a6-b046-bd77fd181e42)
+    placeholder: "![image](https://github.com/user-attachments/assets/7dbaf908-149e-42a6-b046-bd77fd181e42)"
   validations:
     required: false
 
