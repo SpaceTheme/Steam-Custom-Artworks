@@ -4,7 +4,7 @@ title: "!!! Leave empty !!!"
 labels: [request]
 body:
 - type: dropdown
-  id: type
+  id: artwork_type
   attributes:
     label: Artwork Type
     options:
