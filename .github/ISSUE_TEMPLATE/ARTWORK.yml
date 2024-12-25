@@ -1,0 +1,40 @@
+name: Report Artwork
+description: Request a new artwork for a game or software.
+title: "!!! Leave empty !!!"
+labels: [request]
+body:
+- type: dropdown
+  id: type
+  attributes:
+    label: Type
+    options:
+      - Game
+      - Software
+  validations:
+    required: true
+
+- type: checkboxes
+  id: change_image
+  attributes:
+    label: Change an existing image
+    options:
+    - label: Yes
+      required: false
+
+- type: textarea
+  id: custom_image
+  attributes:
+    label: Upload Custom Image (Not recommended) - Leave empty to auto-generate
+    description: Paste, drag & drop or upload your image here. - Only github upload links are allowed.
+    placeholder: ![image](https://github.com/user-attachments/assets/7dbaf908-149e-42a6-b046-bd77fd181e42)
+  validations:
+    required: false
+
+- type: input
+  id: app_id
+  attributes:
+    label: App ID
+    description: The App ID of the game or software. - You can find it on https://steamdb.info or https://store.steampowered.com
+    placeholder: 570
+    validations:
+      required: true
