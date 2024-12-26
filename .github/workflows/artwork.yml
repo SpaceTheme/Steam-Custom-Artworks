@@ -1,0 +1,17 @@
+name: Create Artwork
+on:
+  issues:
+    types: [opened]
+jobs:
+  rename-issue-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract App ID
+        id: extract_app_id
+        run: |
+          echo "::set-output name=app_id::$(echo '${{ github.event.issue.body }}' | grep -oP '(?<=app_id: ).*')"
+      - name: Rename Issue Title
+        uses: peter-evans/create-issue-from-file@v2
+        with:
+          title: "[Request] ${{ steps.extract_app_id.outputs.app_id }}"
+          content-filepath: .github/ISSUE_TEMPLATE/ARTWORK.yml
