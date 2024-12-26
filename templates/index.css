@@ -44,59 +44,59 @@ body {
     flex-direction: row;
     max-width: 3840px;
     max-height: 1240px;
-    padding: 128px 512px 128px 128px;
+    padding: 128px;
 }
 
 
-.artwork h1 {
+h1 {
     font-size: 48px;
     font-weight: 900;
 }
-.artwork#grid h1 {
+#grid h1 {
     height: 122px;
 }
-.artwork#p h1 {
+#p h1 {
     height: 202px;
 }
-.artwork#hero h1 {
+#hero h1 {
     height: 558px;
     font-size: 144px;
 }
 
 
-.artwork .divider {
+.divider {
     width: 100%;
     height: 6px;
     min-height: 6px;
     border-radius: 100px;
     background: #161616;
 }
-.artwork#p .divider {
+#p .divider {
     width: 6px;
     min-width: 6px;
     height: 100%;
 }
-.artwork#hero .divider {
+#hero .divider {
     width: 12px;
     min-width: 12px;
     height: 100%;
 }
 
 
-.artwork img {
+img {
     object-fit: cover;
     border-radius: 32px;
     box-shadow: 10px 10px 0 0 #161616;
 }
-.artwork#grid img {
+#grid img {
     width: 100%;
     height: 470px;
 }
-.artwork#p img {
+#p img {
     width: 315px;
     height: 100%;
 }
-.artwork#hero img {
+#hero img {
     width: 1080px;
     height: 100%;
     border-radius: 64px;
@@ -104,43 +104,56 @@ body {
 }
 
 
-.artwork .text {
+.text {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: flex-start;
     width: 100%;
 }
-.artwork#p .text {
+#p .text {
     gap: 84px;
     width: 100%;
 }
-.artwork#hero .text {
+#hero .text {
     gap: 168px;
     padding: 48px 0px 48px 0px;
 }
 
 
-.artwork .bottom {
+.bottom {
+    position: relative;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: flex-end;
     width: 100%;
     font-weight: 600;
     letter-spacing: 1px;
 }
-.artwork#grid .bottom {
+#grid .bottom {
+    align-items: flex-start;
+    height: 100px;
     font-size: 28px;
 }
-.artwork#p .bottom {
+#p .bottom {
+    height: 100px;
     font-size: 24px;
 }
-.artwork#hero .bottom {
+#hero .bottom {
     font-size: 64px;
 }
 
 
 b {
     font-weight: 900;
+}
+
+
+p#release {
+    position: absolute;
+    right: 0;
+}
+#hero p#release {
+    position: unset;
 }
