@@ -1,7 +1,7 @@
 name: Create Artwork
 on:
   issues:
-    types: [opened]
+    types: [opened, edited]
 jobs:
   rename-issue-title:
     runs-on: ubuntu-latest
@@ -9,9 +9,13 @@ jobs:
       - name: Extract App ID
         id: extract_app_id
         run: |
-          echo "::set-output name=app_id::$(echo '${{ github.event.issue.body }}' | grep -oP '(?<=app_id: ).*')"
+          echo "app_id=$(echo '${{ github.event.issue.body }}' | grep -oP '(?<=app_id: ).*')" >> $GITHUB_ENV
       - name: Rename Issue Title
-        uses: peter-evans/create-issue-from-file@v2
-        with:
-          title: "[Request] ${{ steps.extract_app_id.outputs.app_id }}"
-          content-filepath: .github/ISSUE_TEMPLATE/ARTWORK.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -X PATCH \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
+            -d '{"title":"[Request] '${{ env.app_id }}'"}'
