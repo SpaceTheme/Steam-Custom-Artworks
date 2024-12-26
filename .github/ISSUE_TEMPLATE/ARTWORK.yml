@@ -1,4 +1,4 @@
-name: Report Artwork
+name: Request Artwork
 description: Request a new artwork for a game or software.
 title: "!!! Leave empty !!!"
 labels: [request]
@@ -27,8 +27,11 @@ body:
     options:
     - label: "Yes"
       required: false
-- type: textarea
-  id: custom_image
+- type: input
+  id: image
   attributes:
-    label: Upload Custom Image (Not recommended) - Leave empty to auto-generate
-    description: Paste, drag & drop or upload your image here. - Only github upload links are allowed.
+    label: Image
+    description: Image URL
+    placeholder: "https://www.steamgriddb.com/hero/11836"
+  validations:
+    required: true
