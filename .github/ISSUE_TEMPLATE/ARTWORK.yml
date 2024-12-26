@@ -29,10 +29,3 @@ body:
     placeholder: "https://www.steamgriddb.com/hero/11836"
   validations:
     required: true
-- type: checkboxes
-  id: change_image
-  attributes:
-    label: Change an existing image
-    options:
-    - label: "Yes"
-      required: false
