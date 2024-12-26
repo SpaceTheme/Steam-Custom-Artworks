@@ -21,6 +21,14 @@ body:
     placeholder: "570"
   validations:
     required: true
+- type: input
+  id: image
+  attributes:
+    label: Image URL
+    description: "Only SteamGridDB links are allowed. Allowed filters are: dimension "3840x1240", style "Alternate", file type "png", tag "Untagged" and "Static" images. - You can find it on https://steamgriddb.com"
+    placeholder: "https://www.steamgriddb.com/hero/11836"
+  validations:
+    required: true
 - type: checkboxes
   id: change_image
   attributes:
@@ -28,11 +36,3 @@ body:
     options:
     - label: "Yes"
       required: false
-- type: input
-  id: image
-  attributes:
-    label: Image
-    description: Image URL
-    placeholder: "https://www.steamgriddb.com/hero/11836"
-  validations:
-    required: true
