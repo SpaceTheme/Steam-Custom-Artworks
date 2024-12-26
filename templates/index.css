@@ -1,0 +1,146 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+html,body {
+    width: 100%;
+    min-width: 4000px;
+    height: 100%;
+    min-height: 4000px;
+}
+body {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+    padding: 48px;
+    font-family: "Be Vietnam Pro", serif;
+    color: #161616;
+}
+
+
+
+.artwork {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: 42px;
+    background: #CCC1A1;
+}
+.artwork#grid {
+    gap: 12px;
+    max-width: 600px;
+    max-height: 900px;
+}
+.artwork#p {
+    gap: 24px;
+    flex-direction: row;
+    max-width: 920px;
+    max-height: 430px;
+}
+.artwork#hero {
+    gap: 42px;
+    flex-direction: row;
+    max-width: 3840px;
+    max-height: 1240px;
+    padding: 128px 512px 128px 128px;
+}
+
+
+.artwork h1 {
+    font-size: 48px;
+    font-weight: 900;
+}
+.artwork#grid h1 {
+    height: 122px;
+}
+.artwork#p h1 {
+    height: 202px;
+}
+.artwork#hero h1 {
+    height: 558px;
+    font-size: 144px;
+}
+
+
+.artwork .divider {
+    width: 100%;
+    height: 6px;
+    min-height: 6px;
+    border-radius: 100px;
+    background: #161616;
+}
+.artwork#p .divider {
+    width: 6px;
+    min-width: 6px;
+    height: 100%;
+}
+.artwork#hero .divider {
+    width: 12px;
+    min-width: 12px;
+    height: 100%;
+}
+
+
+.artwork img {
+    object-fit: cover;
+    border-radius: 32px;
+    box-shadow: 10px 10px 0 0 #161616;
+}
+.artwork#grid img {
+    width: 100%;
+    height: 470px;
+}
+.artwork#p img {
+    width: 315px;
+    height: 100%;
+}
+.artwork#hero img {
+    width: 1080px;
+    height: 100%;
+    border-radius: 64px;
+    box-shadow: 20px 20px 0 0 #161616;
+}
+
+
+.artwork .text {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    width: 100%;
+}
+.artwork#p .text {
+    gap: 84px;
+    width: 100%;
+}
+.artwork#hero .text {
+    gap: 168px;
+    padding: 48px 0px 48px 0px;
+}
+
+
+.artwork .bottom {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+.artwork#grid .bottom {
+    font-size: 28px;
+}
+.artwork#p .bottom {
+    font-size: 24px;
+}
+.artwork#hero .bottom {
+    font-size: 64px;
+}
+
+
+b {
+    font-weight: 900;
+}
