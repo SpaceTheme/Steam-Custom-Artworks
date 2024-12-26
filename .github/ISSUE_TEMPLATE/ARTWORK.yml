@@ -25,7 +25,7 @@ body:
   id: image
   attributes:
     label: Image URL
-    description: "Only SteamGridDB links are allowed. Allowed filters are: dimension "3840x1240", style "Alternate", file type "png", tag "Untagged" and "Static" images. - You can find it on https://steamgriddb.com"
+    description: Only SteamGridDB links are allowed. Allowed filters are: dimension "3840x1240", style "Alternate", file type "png", tag "Untagged" and "Static" images. - You can find it on https://steamgriddb.com
     placeholder: "https://www.steamgriddb.com/hero/11836"
   validations:
     required: true
