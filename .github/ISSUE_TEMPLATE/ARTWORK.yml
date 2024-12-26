@@ -10,9 +10,9 @@ body:
     options:
       - Game
       - Software
+    default: Game
   validations:
     required: true
-    default: Game
 - type: input
   id: app_id
   attributes:
