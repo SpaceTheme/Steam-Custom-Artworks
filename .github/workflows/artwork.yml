@@ -1,34 +1,10 @@
 name: Create Artwork
 on:
   issues:
-    types: [opened, edited]
+    types: [edited]
 jobs:
-  rename-issue-title:
+  check-if-command-comment:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
-      
-      - name: Extract app_id from Issue and Update Title
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Issue Number and Repository Information
-          ISSUE_NUMBER=${{ github.event.issue.number }}
-          REPO=${{ github.repository }}
-
-          # Extract Issue Body
-          ISSUE_BODY=$(curl -s \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER | jq -r '.body')
-
-          # Extract app_id using a Regex or specific pattern
-          APP_ID=$(echo "$ISSUE_BODY" | jq -r '.[] | select(.id == "app_id") | .attributes.placeholder')
-
-          # Update Issue Title
-          curl -X PATCH \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER \
-            -d "{\"title\":\"[Request]: $APP_ID\"}"
+      - name: Checkout Repository
+        uses: actions/checkout@v4
