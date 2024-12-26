@@ -10,7 +10,7 @@ body:
     options:
       - Game
       - Software
-    default: Game
+    default: 0
   validations:
     required: true
 - type: input
