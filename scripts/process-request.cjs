@@ -10,12 +10,32 @@ const token = process.env.GITHUB_TOKEN;
 const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
 const octokit = new Octokit({ auth: token });
 
+// GitHub-Organisation und berechtigter Benutzer
+const orgName = 'SpaceTheme'; // Name deiner GitHub-Organisation
+const allowedUser = 'SpaceEnergy';  // GitHub-Benutzername des berechtigten Benutzers
+
+async function isUserInOrg(user) {
+    try {
+        // GitHub API-Aufruf, um zu prüfen, ob der Benutzer Mitglied der Organisation ist
+        const response = await octokit.request('GET /orgs/{org}/memberships/{username}', {
+            org: orgName,
+            username: user
+        });
+        return response.status === 200; // Benutzer ist Mitglied
+    } catch (error) {
+        console.log('User is not a member of the organization or API error:', error);
+        return false;
+    }
+}
+
+// Funktion, um eine Sektion aus dem Markdown-Body zu extrahieren
 function extractMarkdownSection(label, body) {
   const regex = new RegExp(`### ${label}\\s+([\\s\\S]*?)(?=\\n###|$)`, 'i');
   const match = body.match(regex);
   return match ? match[1].trim() : null;
 }
 
+// Steam-App-Daten abfragen
 function fetchSteamAppDetails(appId) {
   return new Promise((resolve) => {
     const url = `https://store.steampowered.com/api/appdetails?appids=${appId}`;
@@ -45,6 +65,7 @@ function fetchSteamAppDetails(appId) {
   });
 }
 
+// Bild herunterladen
 function downloadImage(url, dest) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(dest);
@@ -62,11 +83,20 @@ async function run() {
   const repo = process.env.GITHUB_REPOSITORY;
   const [owner, repoName] = repo.split('/');
 
+  // Prüfen, ob der Kommentar mit /process beginnt und der Benutzer der Repository-Owner ist
   if (!comment.trim().startsWith('/process') || event.comment.user.login !== owner) {
     console.log('⚠️ Not an authorized command or user.');
     return;
   }
 
+  // Prüfen, ob der Benutzer Mitglied der Organisation ist
+  const userIsInOrg = await isUserInOrg(event.comment.user.login);
+  if (!userIsInOrg) {
+    console.log('⚠️ User is not a member of the organization.');
+    return;
+  }
+
+  // Abrufen der Issue-Daten
   const { data: issue } = await octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}', {
     owner,
     repo: repoName,
@@ -75,6 +105,7 @@ async function run() {
 
   const body = issue.body;
 
+  // Extrahieren der erforderlichen Felder
   const appId = extractMarkdownSection('App ID', body);
   const imageUrl = extractMarkdownSection('Image URL', body);
   const type = extractMarkdownSection('Artwork Type', body);
@@ -84,10 +115,14 @@ async function run() {
     return;
   }
 
+  // Abrufen der Steam-Daten basierend auf der App ID
   const { name, publisher, releaseDate } = await fetchSteamAppDetails(appId);
+
+  // Erstelle den Ordner für die Artworks
   const folderPath = path.join('artworks', publisher, appId);
   fs.mkdirSync(folderPath, { recursive: true });
 
+  // Bild herunterladen
   const imagePath = path.join(folderPath, 'imageSource.png');
   try {
     await downloadImage(imageUrl, imagePath);
@@ -96,6 +131,7 @@ async function run() {
     return;
   }
 
+  // Mustache-Template für index.html laden
   const templatePath = path.join('templates', 'index.html.mustache');
   if (!fs.existsSync(templatePath)) {
     console.error('❌ Template not found.');
@@ -110,9 +146,11 @@ async function run() {
     releaseDate,
   });
 
+  // index.html schreiben
   fs.writeFileSync(path.join(folderPath, 'index.html'), html);
   console.log(`✅ Done! Created artwork for ${name} at ${folderPath}`);
 
+  // Git-Befehle ausführen, um Änderungen zu committen und zu pushen
   const execSync = require('child_process').execSync;
   execSync('git config user.name "github-actions"');
   execSync('git config user.email "github-actions@github.com"');
