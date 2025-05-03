@@ -1,0 +1,23 @@
+name: Weekly Release
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+jobs:
+  rename-issue-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+  check-app_id:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+
+  check-image-url:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
