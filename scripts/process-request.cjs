@@ -26,27 +26,22 @@ async function run() {
 
   const body = issue.body;
 
-  // Parse simple key:value from body
-  const steamIDMatch = body.match(/SteamID:\s*(\d+)/i);
-  const imageUrlMatch = body.match(/https:\/\/steamgriddb\.com[^\s)]+/);
-  const typeMatch = body.match(/Type:\s*(Game|Software)/i);
-  const publisherMatch = body.match(/Publisher:\s*(.+)/i);
-  const nameMatch = body.match(/Name:\s*(.+)/i);
-  const releaseDateMatch = body.match(/Release Date:\s*(.+)/i);
+  // Extract the fields from the structured body based on IDs
+  const artworkType = body.match(/artwork_type.*"value": "(Game|Software)"/i)?.[1];
+  const steamID = body.match(/app_id.*"value": "(\d+)"/i)?.[1];
+  const imageUrl = body.match(/image.*"value": "(https:\/\/steamgriddb\.com[^\s)]+)"/)?.[1];
 
-  if (!steamIDMatch || !imageUrlMatch || !typeMatch) {
+  // Optional fields (Publisher, Name, Release Date)
+  const publisher = body.match(/publisher.*"value": "(.*?)"/i)?.[1] || 'UnknownPublisher';
+  const name = body.match(/name.*"value": "(.*?)"/i)?.[1] || 'UnknownGame';
+  const releaseDate = body.match(/release_date.*"value": "(.*?)"/i)?.[1] || 'Unknown';
+
+  if (!steamID || !imageUrl || !artworkType) {
     console.error('Missing required fields');
     return;
   }
 
-  const steamID = steamIDMatch[1];
-  const imageUrl = imageUrlMatch[0];
-  const type = typeMatch[1];
-  const publisher = (publisherMatch?.[1] || 'UnknownPublisher').replace(/\s+/g, '_');
-  const name = nameMatch?.[1] || 'UnknownGame';
-  const releaseDate = releaseDateMatch?.[1] || 'Unknown';
-
-  const folderPath = path.join('artworks', publisher, steamID);
+  const folderPath = path.join('artworks', publisher.replace(/\s+/g, '_'), steamID);
   fs.mkdirSync(folderPath, { recursive: true });
 
   // Download the image
