@@ -25,4 +25,4 @@ jobs:
       - name: Run artwork processor
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/process-request.js
+        run: node scripts/process-request.cjs
