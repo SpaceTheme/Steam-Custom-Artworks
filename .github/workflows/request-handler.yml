@@ -4,6 +4,10 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  issues: write
+  contents: write
+
 jobs:
   process-request:
     if: >
