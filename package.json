@@ -1,10 +1,14 @@
 {
-    "name": "artwork-request-handler",
-    "version": "1.0.0",
-    "main": "scripts/process-request.js",
-    "type": "module",
-    "dependencies": {
-      "@octokit/core": "^5.0.0",
-      "mustache": "^4.2.0"
-    }
+  "name": "steam-custom-artworks",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "scripts/process-request.cjs",
+  "scripts": {
+    "process-request": "node scripts/process-request.cjs"
+  },
+  "dependencies": {
+    "@octokit/core": "^5.2.1",
+    "mustache": "^4.2.0",
+    "node-fetch": "^2.6.9"
   }
+}
