@@ -1,6 +1,6 @@
 name: Request Artwork
 description: Request a new artwork for a game or software.
-title: "!!! Leave empty !!!"
+title: "!!! DON'T CHANGE !!!"
 labels: [request]
 body:
 - type: dropdown
