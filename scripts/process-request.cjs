@@ -5,87 +5,103 @@ const { Octokit } = require('@octokit/core');
 const Mustache = require('mustache');
 const fetch = require('node-fetch');
 
-// --- GitHub Setup ---
+// GitHub context
 const eventPath = process.env.GITHUB_EVENT_PATH;
 const token = process.env.GITHUB_TOKEN;
 const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
 const octokit = new Octokit({ auth: token });
 
-// --- Helper: Parse Markdown fields from issue body ---
-function extractField(body, label) {
-  const regex = new RegExp(`### ${label}\\s*\\n(.+?)\\s*(?:\\n|$)`);
-  const match = body.match(regex);
-  return match ? match[1].trim() : null;
+async function fetchSteamAppDetails(appId) {
+  const url = `https://store.steampowered.com/api/appdetails?appids=${appId}&cc=us&l=en`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const game = data[appId]?.data;
+
+    if (!game) return { name: 'UnknownGame', publisher: 'UnknownPublisher', releaseDate: 'Unknown' };
+
+    const name = game.name || 'UnknownGame';
+    const publisher = (game.publishers?.[0] || 'UnknownPublisher').replace(/\s+/g, '_');
+    const releaseDate = game.release_date?.date || 'Unknown';
+
+    return { name, publisher, releaseDate };
+  } catch (err) {
+    console.error('❌ Failed to fetch Steam API:', err.message);
+    return { name: 'UnknownGame', publisher: 'UnknownPublisher', releaseDate: 'Unknown' };
+  }
+}
+
+function downloadImage(url, dest) {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    https.get(url, response => {
+      if (response.statusCode !== 200) {
+        reject(new Error(`Image request failed: ${response.statusCode}`));
+        return;
+      }
+
+      response.pipe(file);
+      file.on('finish', () => file.close(resolve));
+    }).on('error', reject);
+  });
 }
 
 async function run() {
-  const comment = event.comment?.body || '';
+  const comment = event.comment?.body;
   const issueNumber = event.issue?.number;
-  const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
+  const repo = process.env.GITHUB_REPOSITORY;
+  const [owner, repoName] = repo.split('/');
 
-  // Fetch the issue
+  // Fetch issue
   const { data: issue } = await octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}', {
     owner,
-    repo,
+    repo: repoName,
     issue_number: issueNumber,
   });
 
   const body = issue.body;
 
-  const appId = extractField(body, 'App ID');
-  const imageUrl = extractField(body, 'Image URL');
-  const artworkType = extractField(body, 'Artwork Type');
+  const appIdMatch = body.match(/app_id.+?(\d+)/i);
+  const imageUrlMatch = body.match(/https:\/\/steamgriddb\.com[^\s)"]+/);
+  const typeMatch = body.match(/artwork_type.+?(Game|Software)/i);
 
-  if (!appId || !imageUrl || !artworkType) {
-    console.error('❌ Missing required fields: App ID, Image URL, or Artwork Type');
+  if (!appIdMatch || !imageUrlMatch || !typeMatch) {
+    console.error('❌ Missing required fields');
     return;
   }
 
-  // --- Optional: Fetch metadata from Steam API ---
-  const steamKey = process.env.STEAM_API_KEY; // set in your GitHub repo secrets
-  let name = 'UnknownGame';
-  let publisher = 'UnknownPublisher';
-  let releaseDate = 'Unknown';
+  const appId = appIdMatch[1];
+  const imageUrl = imageUrlMatch[0];
+  const type = typeMatch[1];
 
-  if (steamKey) {
-    try {
-      const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}`);
-      const data = await res.json();
-      const appData = data[appId]?.data;
-      if (appData) {
-        name = appData.name || name;
-        publisher = (appData.publishers?.[0] || publisher).replace(/\s+/g, '_');
-        releaseDate = appData.release_date?.date || releaseDate;
-      }
-    } catch (e) {
-      console.warn('⚠️ Failed to fetch Steam metadata:', e.message);
-    }
-  }
+  const { name, publisher, releaseDate } = await fetchSteamAppDetails(appId);
 
   const folderPath = path.join('artworks', publisher, appId);
   fs.mkdirSync(folderPath, { recursive: true });
 
-  // --- Download image ---
   const imagePath = path.join(folderPath, 'imageSource.png');
-  const file = fs.createWriteStream(imagePath);
-  https.get(imageUrl, response => {
-    response.pipe(file);
-    file.on('finish', () => {
-      file.close();
+  try {
+    await downloadImage(imageUrl, imagePath);
+    console.log(`🖼️ Image saved to ${imagePath}`);
+  } catch (err) {
+    console.error('❌ Failed to download image:', err.message);
+    return;
+  }
 
-      // --- Create index.html ---
-      const template = fs.readFileSync('templates/index.html.mustache', 'utf8');
-      const html = Mustache.render(template, {
-        gameID: appId,
-        publisher,
-        name,
-        releaseDate,
-      });
-
-      fs.writeFileSync(path.join(folderPath, 'index.html'), html);
-      console.log(`✅ Done! Created artwork for ${name} at ${folderPath}`);
+  try {
+    const template = fs.readFileSync('templates/index.html.mustache', 'utf8');
+    const html = Mustache.render(template, {
+      gameID: appId,
+      publisher,
+      name,
+      releaseDate,
     });
-  });
+
+    fs.writeFileSync(path.join(folderPath, 'index.html'), html);
+    console.log(`✅ Done! Created artwork for ${name} at ${folderPath}`);
+  } catch (err) {
+    console.error('❌ Failed to write index.html:', err.message);
+  }
 }
 
 run();
