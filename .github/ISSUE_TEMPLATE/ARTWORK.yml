@@ -29,11 +29,3 @@ body:
     placeholder: "https://www.steamgriddb.com/hero/11836"
   validations:
     required: true
-- type: input
-  id: publisher
-  attributes:
-    label: Publisher
-    description: The App ID of the game or software. - You can find it on https://steamdb.info or https://store.steampowered.com
-    placeholder: "570"
-  validations:
-    required: true
