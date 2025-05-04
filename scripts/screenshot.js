@@ -42,24 +42,19 @@ const path = require('path');
       })));
       console.log('Images in page:', images);
       for (const elementId of elementIds) {
-        if (!elementId) {
-          console.log('Skipping invalid elementId:', elementId);
-          continue;
-        }
         console.log('Selecting element:', elementId);
         const element = await page.$('#' + elementId);
         console.log('Element', elementId, 'found:', !!element);
         if (element) {
-          let suffix = '';
-          if (elementId === '') {
-            suffix = 'p';
+          let fileName;
+          if (elementId === 'grid') {
+            fileName = `${appId}p.png`;
           } else if (elementId === 'p') {
-            suffix = '';
+            fileName = `${appId}.png`;
           } else {
-            suffix = elementId;
+            fileName = `${appId}_${elementId}.png`;
           }
-          const filename = `${appId}${suffix}.png`;
-          await element.screenshot({ path: `screenshots/grid/${filename}` });
+          await element.screenshot({ path: `screenshots/grid/${fileName}` });
           console.log('Screenshot taken for', elementId);
         }
       }
