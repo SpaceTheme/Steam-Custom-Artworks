@@ -207,7 +207,7 @@ jobs:
             git push
           fi
 
-      - name: Trigger screenshot workflow
+      - name: Trigger weekly-release workflow
         if: success()
         uses: actions/github-script@v6
         with:
@@ -216,6 +216,6 @@ jobs:
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'screenshot.yml',
+              workflow_id: 'weekly-release.yml',
               ref: 'main'
             });
