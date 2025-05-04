@@ -10,6 +10,20 @@ jobs:
   handle-issue:
     runs-on: ubuntu-latest
     steps:
+      - name: Rename Issue
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueTitle = context.payload.issue.title;
+            const newTitle = issueTitle.replace(/#(\d+)/, 'App ID: $1');
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              title: `[Request] ${newTitle}`
+            });
       - name: Post message on issue opened
         if: github.event_name == 'issues'
         uses: actions/github-script@v6
