@@ -1,4 +1,4 @@
-name: Issue Comment
+name: Handle Issues
 
 on:
   issues:
