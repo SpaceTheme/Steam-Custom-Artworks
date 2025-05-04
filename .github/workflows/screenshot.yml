@@ -35,7 +35,7 @@ jobs:
       - name: Create zip
         run: |
           cd screenshots
-          zip -r ../screenshots.zip grid
+          zip -r ../grid.zip grid
 
       - name: Set release date
         run: echo "RELEASE_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
@@ -57,8 +57,9 @@ jobs:
           tag_name: "v${{ env.RELEASE_DATE }}"
           name: "v${{ env.RELEASE_DATE }}"
           body: |
+            New artworks for the following games:
             ${{ env.FORMATTED_IDS }}
-          files: screenshots.zip
+          files: grid.zip
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
