@@ -1,4 +1,4 @@
-name: Process Issue Workflow
+name: Process Issue
 
 on:
   repository_dispatch:

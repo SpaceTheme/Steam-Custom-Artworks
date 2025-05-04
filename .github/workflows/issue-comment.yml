@@ -1,4 +1,4 @@
-name: Issue Comment Workflow
+name: Issue Comment
 
 on:
   issues:
