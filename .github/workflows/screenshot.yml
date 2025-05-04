@@ -1,0 +1,65 @@
+name: Screenshot Workflow
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # every Sunday at 00:00 UTC
+  workflow_dispatch:
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Take screenshots
+        run: node scripts/screenshot.js
+
+      - name: Create zip
+        run: |
+          cd screenshots
+          zip -r ../screenshots.zip grid
+
+      - name: Set release date
+        run: echo "RELEASE_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+        
+      - name: Format release notes
+        run: |
+          if [ -s game_ids.txt ]; then
+            FORMATTED_IDS=$(cat game_ids.txt | sed 's/^/- /' | tr '\n' '\n')
+            echo "FORMATTED_IDS<<EOF" >> $GITHUB_ENV
+            echo "$FORMATTED_IDS" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          else
+            echo "FORMATTED_IDS=No AppIDs processed" >> $GITHUB_ENV
+          fi
+      
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "screenshots-${{ env.RELEASE_DATE }}"
+          name: "Screenshots ${{ env.RELEASE_DATE }}"
+          body: |
+            Screenshots for the following AppIDs:
+            ${{ env.FORMATTED_IDS }}
+          files: screenshots.zip
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
