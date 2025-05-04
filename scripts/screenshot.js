@@ -42,6 +42,10 @@ const path = require('path');
       })));
       console.log('Images in page:', images);
       for (const elementId of elementIds) {
+        if (!elementId) {
+          console.log('Skipping invalid elementId:', elementId);
+          continue;
+        }
         console.log('Selecting element:', elementId);
         const element = await page.$('#' + elementId);
         console.log('Element', elementId, 'found:', !!element);
