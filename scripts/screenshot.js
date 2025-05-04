@@ -26,7 +26,7 @@ const path = require('path');
 
   fs.mkdirSync('screenshots/grid', { recursive: true });
   const gameIds = [];
-  const elementIds = ['grid', 'p', 'hero'];
+  const elementIds = ['', 'p', '_hero'];
 
   for (const file of files) {
     const appId = path.basename(path.dirname(file));
@@ -46,7 +46,7 @@ const path = require('path');
         const element = await page.$('#' + elementId);
         console.log('Element', elementId, 'found:', !!element);
         if (element) {
-          await element.screenshot({ path: `screenshots/grid/${appId}_${elementId}.png` });
+          await element.screenshot({ path: `screenshots/grid/${appId}${elementId}.png` });
           console.log('Screenshot taken for', elementId);
         }
       }
