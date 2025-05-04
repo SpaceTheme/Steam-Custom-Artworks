@@ -50,7 +50,16 @@ const path = require('path');
         const element = await page.$('#' + elementId);
         console.log('Element', elementId, 'found:', !!element);
         if (element) {
-          await element.screenshot({ path: `screenshots/grid/${appId}_${elementId}.png` });
+          let suffix = '';
+          if (elementId === '') {
+            suffix = 'p';
+          } else if (elementId === 'p') {
+            suffix = '';
+          } else {
+            suffix = elementId;
+          }
+          const filename = `${appId}${suffix}.png`;
+          await element.screenshot({ path: `screenshots/grid/${filename}` });
           console.log('Screenshot taken for', elementId);
         }
       }
