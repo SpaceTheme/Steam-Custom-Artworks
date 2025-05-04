@@ -207,15 +207,15 @@ jobs:
             git push
           fi
 
-      - name: Trigger weekly-release workflow
-        if: success()
+      - name: Post message in issue
+        if: github.event_name == 'issues'
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            await github.rest.actions.createWorkflowDispatch({
+            github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'weekly-release.yml',
-              ref: 'main'
+              issue_number: context.issue.number,
+              body: 'The artwork will be included in the next release. Please be patient until then.'
             });
