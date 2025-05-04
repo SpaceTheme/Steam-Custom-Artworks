@@ -1,0 +1,65 @@
+name: Handle Issues
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  handle-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rename Issue
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const match = context.payload.issue.body.match(/### App ID\n\n(\S+)/);
+            const appId = match ? match[1] : null;
+      
+            if (!appId) {
+              core.setFailed("App ID not found in the issue body.");
+              return;
+            }
+      
+            const newTitle = `[Request] ${appId}`;
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              title: newTitle
+            });
+      - name: Post message on issue opened
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: 'Thank you for your submission! @SpaceEnergy is looking at this and needs to run `/process`.'
+            });
+
+      - name: Check for /process comment
+        if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/process')
+        env:
+          SENDER: ${{ github.event.comment.user.login }}
+        run: |
+          if [ "$SENDER" != "SpaceEnergy" ]; then
+            echo "Unauthorized: Only SpaceEnergy can run /process"
+            exit 1
+          fi
+          echo "Authorized user. Triggering process workflow."
+          echo "TRIGGER_PROCESS=true" >> $GITHUB_ENV
+
+      - name: Dispatch process workflow
+        if: env.TRIGGER_PROCESS == 'true'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: process-issue
+          client-payload: '{"issue_number": ${{ github.event.issue.number }}}'

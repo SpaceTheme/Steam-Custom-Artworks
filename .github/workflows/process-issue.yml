@@ -1,0 +1,221 @@
+name: Process Issue
+
+on:
+  repository_dispatch:
+    types: [process-issue]
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch issue data
+        uses: actions/github-script@v6
+        id: issue-data
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.client_payload.issue_number }}
+            });
+            const body = issue.data.body;
+            const appIdMatch = body.match(/### App ID\n\n(\S+)/);
+            const imageUrlMatch = body.match(/### Image URL\n\n(https\S+)/);
+            const artworkTypeMatch = body.match(/### Artwork Type\n\n(Game|Software)/);
+            return {
+              app_id: appIdMatch ? appIdMatch[1] : '',
+              image_url: imageUrlMatch ? imageUrlMatch[1] : '',
+              artwork_type: artworkTypeMatch ? artworkTypeMatch[1] : ''
+            };
+
+      - name: Fetch Steam API data
+        id: steam-data
+        run: |
+          node -e "
+            const axios = require('axios');
+            const fs = require('fs');
+            (async () => {
+              try {
+                const response = await axios.get('https://store.steampowered.com/api/appdetails?appids=${{ fromJson(steps.issue-data.outputs.result).app_id }}');
+                const data = response.data;
+                fs.writeFileSync('steam_data.json', JSON.stringify(data));
+              } catch (error) {
+                console.error('Error fetching Steam API:', error.message);
+                process.exit(1);
+              }
+            })();
+          "
+
+      - name: Validate and download image
+        env:
+          STEAMGRIDDB_API_KEY: ${{ secrets.STEAMGRIDDB_API_KEY }}
+        run: |
+            node -e "
+              const axios = require('axios');
+              const fs = require('fs');
+              const path = require('path');
+              (async () => {
+                try {
+                  const imageUrl = '${{ fromJson(steps.issue-data.outputs.result).image_url }}';
+                  const apiKey = process.env.STEAMGRIDDB_API_KEY;
+                  if (!apiKey) {
+                    console.error('Error: STEAMGRIDDB_API_KEY is not set');
+                    process.exit(1);
+                  }
+
+                  const url = new URL(imageUrl);
+                  const gameIdMatch = url.pathname.match(/\/hero\/(\d+)/);
+                  if (!gameIdMatch || !gameIdMatch[1]) {
+                    console.error('Error: Invalid SteamGridDB URL format:', imageUrl);
+                    process.exit(1);
+                  }
+                  const gameId = gameIdMatch[1];
+                  console.log('Extracted SteamGridDB game ID:', gameId);
+
+                  console.log('Fetching image from SteamGridDB API for game ID:', gameId);
+                  const response = await axios.get('https://www.steamgriddb.com/api/v2/heroes/' + gameId, {
+                    headers: { Authorization: 'Bearer ' + apiKey }
+                  });
+                  const imageData = response.data.data;
+                  if (!response.data.success || !imageData.url) {
+                    console.error('Error: Invalid API response or missing image URL');
+                    process.exit(1);
+                  }
+                  if (imageData.style !== 'alternate' || imageData.tags?.includes('Tagged') || imageData.animated) {
+                    console.error('Error: Image must be Alternate style, Untagged, and Static');
+                    process.exit(1);
+                  }
+                  const imageUrlFromApi = imageData.url;
+                  console.log('Selected image URL:', imageUrlFromApi);
+
+                  const extension = path.extname(new URL(imageUrlFromApi).pathname).split('?')[0] || '.png';
+                  const filename = 'imageSource' + extension;
+                  const imageResponse = await axios.get(imageUrlFromApi, { responseType: 'arraybuffer' });
+                  fs.writeFileSync(filename, imageResponse.data);
+                  console.log('Downloaded file:', filename);
+
+                  const { execSync } = require('child_process');
+                  const fileType = execSync('file ' + filename).toString();
+                  if (!fileType.includes('image data')) {
+                    console.error('Error: Downloaded file is not a valid image');
+                    process.exit(1);
+                  }
+                  console.log('Downloaded file is a valid image:', fileType);
+
+                  fs.writeFileSync('image_extension.txt', extension);
+                } catch (error) {
+                  console.error('Error fetching or processing image:', error.message);
+                  process.exit(1);
+                }
+              })();
+            "
+
+      - name: Generate HTML
+        run: |
+            node -e "
+              const Mustache = require('mustache');
+              const fs = require('fs');
+              const path = require('path');
+          
+              const steamData = JSON.parse(fs.readFileSync('steam_data.json', 'utf8'));
+              const extension = fs.readFileSync('image_extension.txt', 'utf8').trim();
+              const appId = '${{ fromJson(steps.issue-data.outputs.result).app_id }}';
+          
+              if (!steamData[appId]) {
+                throw new Error('Steam data missing for appId: ' + appId);
+              }
+          
+              const data = steamData[appId].data;
+              const publisherRaw = data.publishers?.[0] || 'Unknown';
+              const publisher = publisherRaw.replace(/[^a-zA-Z0-9]/g, '_');
+          
+              const dir = path.join('artworks', publisher, appId);
+              console.log('Saving to directory:', dir);
+          
+              if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+              }
+        
+              const template = fs.readFileSync('templates/index.html.mustache', 'utf8');
+              const output = Mustache.render(template, {
+                APP_NAME: data.name,
+                APP_PUBLISHER: publisherRaw,
+                APP_RELEASE: data.release_date?.date || 'Unknown',
+                IMAGE_NAME: 'imageSource' + extension
+              });
+        
+              const indexPath = path.join(dir, 'index.html');
+              fs.writeFileSync(indexPath, output);
+              console.log('index.html saved at:', indexPath);
+        
+              const indexCssPath = 'templates/index.css';
+              if (fs.existsSync(indexCssPath)) {
+                const cssDest = path.join(dir, 'index.css');
+                fs.copyFileSync(indexCssPath, cssDest);
+                console.log('index.css copied to:', cssDest);
+              } else {
+                console.error('Error: index.css not found');
+              }
+        
+              const imageFile = 'imageSource' + extension;
+              if (fs.existsSync(imageFile)) {
+                const imageDest = path.join(dir, 'imageSource' + extension);
+                fs.renameSync(imageFile, imageDest);
+                console.log('Image saved at:', imageDest);
+              } else {
+                console.error('Error: image file not found');
+              }
+        
+              console.log('Files created:', fs.readdirSync(dir));
+            "
+
+      - name: Clean up temporary files
+        run: |
+          rm -f steam_data.json imageSource.* image_extension.txt
+          echo "Cleaned up temporary files"
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add artworks/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Add artwork for app ${{ fromJson(steps.issue-data.outputs.result).app_id }}"
+            git push
+          fi
+
+      - name: Trigger screenshot workflow
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'screenshot.yml',
+              ref: 'main'
+            });
