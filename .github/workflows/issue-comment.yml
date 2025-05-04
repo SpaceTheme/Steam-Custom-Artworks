@@ -16,14 +16,20 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const steamId = context.payload.issue.body.match(/### App ID\n\n(\S+)/);
-            const issueTitle = context.payload.issue.title;
-            const newTitle = issueTitle.replace(steamId);
+            const match = context.payload.issue.body.match(/### App ID\n\n(\S+)/);
+            const appId = match ? match[1] : null;
+      
+            if (!appId) {
+              core.setFailed("App ID not found in the issue body.");
+              return;
+            }
+      
+            const newTitle = `[Request] ${appId}`;
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              title: `[Request] ${newTitle}`
+              title: newTitle
             });
       - name: Post message on issue opened
         if: github.event_name == 'issues'
