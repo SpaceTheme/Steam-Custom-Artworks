@@ -60,7 +60,7 @@ jobs:
             (async () => {
               try {
                 const apiKey = process.env.STEAM_API_KEY;
-                const response = await axios.get('https://store.steampowered.com/api/appdetails?key=${ apiKey }&appids=${{ fromJson(steps.issue-data.outputs.result).app_id }}');
+                const response = await axios.get('https://store.steampowered.com/api/appdetails?key=${apiKey}&appids=${{ fromJson(steps.issue-data.outputs.result).app_id }}');
                 const data = response.data;
                 fs.writeFileSync('steam_data.json', JSON.stringify(data));
               } catch (error) {
