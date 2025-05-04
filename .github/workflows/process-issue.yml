@@ -51,13 +51,16 @@ jobs:
 
       - name: Fetch Steam API data
         id: steam-data
+        env:
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
         run: |
           node -e "
             const axios = require('axios');
             const fs = require('fs');
             (async () => {
               try {
-                const response = await axios.get('https://store.steampowered.com/api/appdetails?appids=${{ fromJson(steps.issue-data.outputs.result).app_id }}');
+                const apiKey = process.env.STEAM_API_KEY;
+                const response = await axios.get('https://store.steampowered.com/api/appdetails?key=${ apiKey }&appids=${{ fromJson(steps.issue-data.outputs.result).app_id }}');
                 const data = response.data;
                 fs.writeFileSync('steam_data.json', JSON.stringify(data));
               } catch (error) {
