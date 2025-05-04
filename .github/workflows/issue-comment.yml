@@ -16,9 +16,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const steamId = context.payload.issue.body.match(/### App ID\n\n(\S+)/);
             const issueTitle = context.payload.issue.title;
-            const newTitle = issueTitle.replace(steamId);
+            const newTitle = issueTitle.replace(context.payload.issue.body.match(/### App ID\n\n(\S+)/);
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
