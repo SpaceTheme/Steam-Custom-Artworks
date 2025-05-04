@@ -54,10 +54,9 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: "screenshots-${{ env.RELEASE_DATE }}"
-          name: "Screenshots ${{ env.RELEASE_DATE }}"
+          tag_name: "v${{ env.RELEASE_DATE }}"
+          name: "v${{ env.RELEASE_DATE }}"
           body: |
-            Screenshots for the following AppIDs:
             ${{ env.FORMATTED_IDS }}
           files: screenshots.zip
           draft: false
