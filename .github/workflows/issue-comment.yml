@@ -44,7 +44,7 @@ jobs:
           SENDER: ${{ github.event.comment.user.login }}
         run: |
           if [ "$SENDER" != "SpaceEnergy" ]; then
-            echo "Unauthorized: Only SpaceEnergy can run /process"
+            echo "Unauthorized: Only @SpaceEnergy can run /process"
             exit 1
           fi
           echo "Authorized user. Triggering process workflow."
