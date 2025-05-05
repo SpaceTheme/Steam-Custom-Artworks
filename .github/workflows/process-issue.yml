@@ -79,10 +79,12 @@ jobs:
               const fs = require('fs');
               const path = require('path');
               (async () => {
+                const issueNumber = ${{ github.event.client_payload.issue_number }};
                 try {
                   const imageUrl = '${{ fromJson(steps.issue-data.outputs.result).image_url }}';
                   const apiKey = process.env.STEAMGRIDDB_API_KEY;
                   if (!apiKey) {
+                    fs.writeFileSync('error_message.txt', 'Error: STEAMGRIDDB_API_KEY is not set');
                     console.error('Error: STEAMGRIDDB_API_KEY is not set');
                     process.exit(1);
                   }
@@ -90,6 +92,7 @@ jobs:
                   const url = new URL(imageUrl);
                   const gameIdMatch = url.pathname.match(/\/hero\/(\d+)/);
                   if (!gameIdMatch || !gameIdMatch[1]) {
+                    fs.writeFileSync('error_message.txt', 'Error: Invalid SteamGridDB URL format: ' + imageUrl);
                     console.error('Error: Invalid SteamGridDB URL format:', imageUrl);
                     process.exit(1);
                   }
@@ -102,11 +105,28 @@ jobs:
                   });
                   const imageData = response.data.data;
                   if (!response.data.success || !imageData.url) {
+                    fs.writeFileSync('error_message.txt', 'Error: Invalid API response or missing image URL for game ID ' + gameId);
                     console.error('Error: Invalid API response or missing image URL');
                     process.exit(1);
                   }
-                  if (imageData.style !== 'alternate' || imageData.tags?.includes('Tagged') || imageData.animated) {
-                    console.error('Error: Image must be Alternate style, Untagged, and Static');
+                  if (imageData.style !== 'alternate') {
+                    fs.writeFileSync('error_message.txt', 'Error: Image style must be Alternate, found: ' + imageData.style);
+                    console.error('Error: Image style must be Alternate');
+                    process.exit(1);
+                  }
+                  if (imageData.tags?.length > 0) {
+                    fs.writeFileSync('error_message.txt', 'Error: Image must be Untagged, found tags: ' + imageData.tags.join(', '));
+                    console.error('Error: Image must be Untagged');
+                    process.exit(1);
+                  }
+                  if (imageData.animated) {
+                    fs.writeFileSync('error_message.txt', 'Error: Image must be Static');
+                    console.error('Error: Image must be Static');
+                    process.exit(1);
+                  }
+                  if (imageData.width !== 3840 || imageData.height !== 1240) {
+                    fs.writeFileSync('error_message.txt', 'Error: Image resolution must be 3840x1240, found: ' + imageData.width + 'x' + imageData.height);
+                    console.error('Error: Image resolution must be 3840x1240');
                     process.exit(1);
                   }
                   const imageUrlFromApi = imageData.url;
@@ -121,6 +141,7 @@ jobs:
                   const { execSync } = require('child_process');
                   const fileType = execSync('file ' + filename).toString();
                   if (!fileType.includes('image data')) {
+                    fs.writeFileSync('error_message.txt', 'Error: Downloaded file is not a valid image');
                     console.error('Error: Downloaded file is not a valid image');
                     process.exit(1);
                   }
@@ -128,13 +149,32 @@ jobs:
 
                   fs.writeFileSync('image_extension.txt', extension);
                 } catch (error) {
+                  fs.writeFileSync('error_message.txt', 'Error processing image: ' + error.message);
                   console.error('Error fetching or processing image:', error.message);
                   process.exit(1);
                 }
               })();
             "
 
+      - name: Post error comment if validation failed
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('error_message.txt')) {
+              const errorMessage = fs.readFileSync('error_message.txt', 'utf8').trim();
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: ${{ github.event.client_payload.issue_number }},
+                body: errorMessage
+              });
+            }
+
       - name: Generate HTML
+        if: success()
         run: |
             node -e "
               const Mustache = require('mustache');
@@ -193,12 +233,33 @@ jobs:
               console.log('Files created:', fs.readdirSync(dir));
             "
 
+      - name: Post release comment and close issue
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.client_payload.issue_number }},
+              body: 'The artwork will be included in the next release. Please be patient until then.'
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.client_payload.issue_number }},
+              state: 'closed'
+            });
+
       - name: Clean up temporary files
+        if: always()
         run: |
-          rm -f steam_data.json imageSource.* image_extension.txt
+          rm -f steam_data.json imageSource.* image_extension.txt error_message.txt
           echo "Cleaned up temporary files"
 
       - name: Commit changes
+        if: success()
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
@@ -210,15 +271,14 @@ jobs:
             git push
           fi
 
-      - name: Post message in issue
-        if: github.event_name == 'issues'
+      - name: Trigger Weekly Release Workflow
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.issues.createComment({
+            await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: 'The artwork will be included in the next release. Please be patient until then.'
+              workflow_id: 'weekly-release.yml',
+              ref: 'main'
             });
