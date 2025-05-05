@@ -49,18 +49,23 @@ body {
 
 
 h1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
     font-size: 48px;
     font-weight: 900;
-    overflow: hidden;
-    line-clamp: auto;
+    text-overflow: ellipsis;
 }
 #grid h1 {
+    -webkit-line-clamp: 2;
     height: 122px;
 }
 #p h1 {
-    height: 202px;
+    -webkit-line-clamp: 4;
+    height: 250px;
 }
 #hero h1 {
+    -webkit-line-clamp: 3;
     height: 558px;
     font-size: 144px;
 }
@@ -114,7 +119,6 @@ img {
     width: 100%;
 }
 #p .text {
-    gap: 84px;
     width: 100%;
 }
 #hero .text {
