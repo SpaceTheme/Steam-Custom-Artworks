@@ -63,3 +63,9 @@ jobs:
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean up temporary files
+        if: always()
+        run: |
+          rm -f game_ids.txt
+          echo "Cleaned up temporary files"
