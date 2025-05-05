@@ -270,15 +270,3 @@ jobs:
             git commit -m "Add artwork for app ${{ fromJson(steps.issue-data.outputs.result).app_id }}"
             git push
           fi
-
-      - name: Trigger Weekly Release Workflow
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'weekly-release.yml',
-              ref: 'main'
-            });
