@@ -3,7 +3,7 @@
 ## 📥️ Install
 1. Download `grid.zip` from the [Releases](https://github.com/SpaceTheme/Steam-Custom-Artworks/releases) section.
 1. Navigate to your Steam root directory, then go to: `steam/userdata/<your-user-id>/config/`<br>
-If you're unsure what your user ID is, you can [find it here](https://steamdb.info/calculator/).
+If you're unsure what your user ID (account ID) is, you can [find it here](https://steamdb.info/calculator/).
 1. Create a folder named `grid` if it doesn't already exist.
 1. Move the downloaded `grid.zip` file into the `grid` folder and extract it there.<br>
 Important: If the extracted files are inside another `grid` folder (i.e., `grid/grid/`), move all contents from the second `grid` folder into the first one.
