@@ -47,6 +47,7 @@ jobs:
             echo "FORMATTED_IDS<<EOF" >> $GITHUB_ENV
             echo "$FORMATTED_IDS" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
+            rm game_ids.txt
           else
             echo "FORMATTED_IDS=No AppIDs processed" >> $GITHUB_ENV
           fi
