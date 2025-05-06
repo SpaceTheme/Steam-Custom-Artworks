@@ -1,0 +1,43 @@
+name: Update Artwork HTML
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-html:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update HTML files
+        run: |
+          # Find all index.html.mustache files in artworks directory
+          find artworks -type f -name "index.html" | while read -r html_file; do
+            cp templates/index.html.mustache "$html_file"
+            echo "Updated $html_file"
+          done
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add artworks/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update all artwork index.html files from templates/index.html.mustache"
+            git push
+          fi
+
+      - name: Trigger Weekly Release Workflow
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'weekly-release.yml',
+                ref: 'main'
+            });
