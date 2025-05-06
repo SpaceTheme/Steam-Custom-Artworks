@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Artworks for: Teardown</title>
+        <title>Artworks for: {{APP_NAME}}</title>
         <link rel="stylesheet" href="index.css">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,35 +11,36 @@
 
     <body>
         <div class="artwork" id="grid">
-            <h1>Teardown</h1>
+            <h1>{{APP_NAME}}</h1>
             <div class="divider"></div>
-            <img src="./imageSource.png">
+            <img src="./{{IMAGE_NAME}}">
             <div class="bottom">
-                <p id="publisher">An <b>Tuxedo Labs</b><br>Production</p>
-                <p id="release"><br>Apr 21, 2022</p>
+                <p id="publisher">An <b>{{APP_PUBLISHER}}</b><br>Production</p>
+                <p id="release"><br>{{APP_RELEASE}}</p>
             </div>
         </div>
         <div class="artwork" id="p">
-            <img src="./imageSource.png">
+            <img src="./{{IMAGE_NAME}}">
             <div class="divider"></div>
             <div class="text">
-                <h1>Teardown</h1>
+                <h1>{{APP_NAME}}</h1>
                 <div class="bottom">
-                    <p id="publisher">An <b>Tuxedo Labs</b><br>Production</p>
-                    <p id="release">Apr 21, 2022</p>
+                    <p id="publisher">An <b>{{APP_PUBLISHER}}</b><br>Production</p>
+                    <p id="release">{{APP_RELEASE}}</p>
                 </div>
             </div>
         </div>
         <div class="artwork" id="hero">
-            <img src="./imageSource.png">
+            <img src="./{{IMAGE_NAME}}">
             <div class="divider"></div>
             <div class="text">
-                <h1>Teardown</h1>
+                <h1>{{APP_NAME}}</h1>
                 <div class="bottom">
-                    <p id="publisher">An <b>Tuxedo Labs</b><br>Production</p>
-                    <p id="release">Apr 21, 2022</p>
+                    <p id="publisher">An <b>{{APP_PUBLISHER}}</b><br>Production</p>
+                    <p id="release">{{APP_RELEASE}}</p>
                 </div>
             </div>
         </div>
+        <div class="logo" id="logo"></div>
     </body>
 </html>
