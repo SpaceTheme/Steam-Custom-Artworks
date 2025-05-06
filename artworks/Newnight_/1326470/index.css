@@ -47,6 +47,12 @@ body {
     padding: 128px;
 }
 
+.logo {
+    width: 1px;
+    height: 1px;
+    background: transparent;
+}
+
 
 h1 {
     overflow: hidden;
