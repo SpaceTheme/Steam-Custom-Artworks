@@ -34,8 +34,13 @@ jobs:
 
       - name: Create zip
         run: |
-          cd screenshots
-          zip -r ../grid.zip grid
+          cd screenshots/original
+          zip -r ../original_grid.zip grid
+
+      - name: Create zip
+        run: |
+          cd screenshots/spacetheme
+          zip -r ../spacetheme_grid.zip grid
 
       - name: Set release date
         run: echo "RELEASE_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
@@ -59,7 +64,7 @@ jobs:
           body: |
             New artworks for the following games:
             ${{ env.FORMATTED_IDS }}
-          files: grid.zip
+          files: original_grid.zip spacetheme_grid.zip
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -212,13 +212,17 @@ jobs:
               fs.writeFileSync(indexPath, output);
               console.log('index.html saved at:', indexPath);
         
-              const indexCssPath = 'templates/index.css';
-              if (fs.existsSync(indexCssPath)) {
-                const cssDest = path.join(dir, 'index.css');
-                fs.copyFileSync(indexCssPath, cssDest);
-                console.log('index.css copied to:', cssDest);
+              const originalCssPath = 'templates/original.css';
+              const spacethemeCssPath = 'templates/spacetheme.css';
+              if (fs.existsSync(originalCssPath)) {
+                const originalcssDest = path.join(dir, 'original.css');
+                const spacethemecssDest = path.join(dir, 'spacetheme.css');
+                fs.copyFileSync(originalCssPath, originalcssDest);
+                fs.copyFileSync(spacethemeCssPath, spacethemecssDest);
+                console.log('original.css copied to:', originalcssDest);
+                console.log('spacetheme.css copied to:', spacethemecssDest);
               } else {
-                console.error('Error: index.css not found');
+                console.error('Error: CSS templates not found');
               }
         
               const imageFile = 'imageSource' + extension;

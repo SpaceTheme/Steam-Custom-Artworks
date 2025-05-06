@@ -1,24 +1,21 @@
-name: Update Artwork CSS
+name: Update Artwork HTML
 
 on:
   workflow_dispatch:
 
 jobs:
-  update-css:
+  update-html:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Update CSS files
+      - name: Update HTML files
         run: |
-          # Find all css files in artworks directory
-          find artworks -type f -name "original.css" | while read -r css_file; do
-            cp templates/original.css "$css_file"
-            echo "Updated $css_file"
-          find artworks -type f -name "spacetheme.css" | while read -r css_file; do
-            cp templates/spacetheme.css "$css_file"
-            echo "Updated $css_file"
+          # Find all index.html.mustache files in artworks directory
+          find artworks -type f -name "index.html" | while read -r html_file; do
+            cp templates/index.html.mustache "$html_file"
+            echo "Updated $html_file"
           done
 
       - name: Commit changes
@@ -29,7 +26,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update all artwork original.css & spacetheme.css files from templates/original.css & templates/spacetheme.css"
+            git commit -m "Update all artwork index.html files from templates/index.html.mustache"
             git push
           fi
 
