@@ -26,7 +26,7 @@ const path = require('path');
 
   fs.mkdirSync('screenshots/grid', { recursive: true });
   const gameIds = [];
-  const elementIds = ['grid', 'p', 'hero'];
+  const elementIds = ['grid', 'p', 'hero', 'logo'];
 
   for (const file of files) {
     const appId = path.basename(path.dirname(file));
