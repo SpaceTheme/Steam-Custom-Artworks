@@ -18,7 +18,7 @@ To request artwork for a game or software, [click here to open a new issue](http
 - [ ] Add transparent logo
 - [ ] Improve resolution of (p) grids
 - [ ] Automatically delete game_ids.txt after each release to ensure only new games appear in the next release
-- [ ] Add theme option to ensure the header scales correctly across all sizes
+- [x] Add theme option to ensure the header scales correctly across all sizes
 
 ## 🙌 Contributors
 - [@SpaceEnergy](https://github.com/SpaceEnergy) - Idea & Design  
