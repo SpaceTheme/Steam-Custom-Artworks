@@ -43,7 +43,7 @@ jobs:
       - name: Format release notes
         run: |
           if [ -s game_ids.txt ]; then
-            FORMATTED_IDS=$(cat game_ids.txt | tr '\n' ',' | sed 's/,$//')
+            FORMATTED_IDS=$(cat game_ids.txt | tr '\n' ', ' | sed 's/,$//')
             echo "FORMATTED_IDS<<EOF" >> $GITHUB_ENV
             echo "$FORMATTED_IDS" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
