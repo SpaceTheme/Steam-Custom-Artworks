@@ -1,5 +1,7 @@
 # Steam-Custom-Artworks
 
+[Banner](/.github/assets/banner.png)
+
 ## 📥️ Install
 1. Download `grid.zip` from the [Releases](https://github.com/SpaceTheme/Steam-Custom-Artworks/releases) section.
 1. Navigate to your Steam root directory, then go to: `steam/userdata/<your-account-id>/config/` | [Get your accountID here](https://noxy.netlify.app/tools/fetchsteam) ( you will have one folder if you have only 1 account in steam )
