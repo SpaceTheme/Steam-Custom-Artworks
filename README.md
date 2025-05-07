@@ -1,6 +1,6 @@
 # Steam-Custom-Artworks
 
-[Banner](/.github/assets/banner.png)
+![Banner](/.github/assets/banner.png)
 
 ## 📥️ Install
 1. Download `grid.zip` from the [Releases](https://github.com/SpaceTheme/Steam-Custom-Artworks/releases) section.
