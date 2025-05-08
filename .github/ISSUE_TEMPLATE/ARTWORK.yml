@@ -6,7 +6,7 @@ body:
 - type: dropdown
   id: artwork_type
   attributes:
-    label: Artwork Type
+    label: App Type
     options:
       - Game
       - Software
