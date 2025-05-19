@@ -48,7 +48,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: 'Thank you for your submission! @SpaceEnergy or @noxygalaxy is looking at this and needs to run `/process`.'
+              body: 'Thank you for your submission! SpaceEnergy or noxygalaxy is looking at this and needs to run `/process`.'
             });
 
       - name: Check for /process comment
@@ -57,7 +57,7 @@ jobs:
           SENDER: ${{ github.event.comment.user.login }}
         run: |
           if [ "$SENDER" != "SpaceEnergy" ] && [ "$SENDER" != "noxygalaxy" ]; then
-            echo "Unauthorized: Only SpaceEnergy & Noxy can run /process"
+            echo "Unauthorized: Only SpaceEnergy & noxygalaxy can run /process"
             exit 1
           fi
           echo "Authorized user. Triggering process workflow."
