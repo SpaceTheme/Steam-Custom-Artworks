@@ -2,7 +2,7 @@ name: Weekly Release
 
 on:
   schedule:
-    - cron: '0 0 * * 0'  # every Sunday at 00:00 UTC
+    - cron: "0 0 * * 0" # every Sunday at 00:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -15,8 +15,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Cache dependencies
         uses: actions/cache@v3
@@ -29,16 +29,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Get new AppIDs since last release
+      - name: Check for new AppIDs
         id: new-appids
         run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 || echo "")
-          if [ -z "$LAST_TAG" ]; then
-            find artworks -name index.html | awk -F'/' '{print $3}' | sort -u > new_app_ids.txt
+          if [ -s game_ids.txt ]; then
+            echo "has_new=true" >> $GITHUB_OUTPUT
+            cat game_ids.txt
           else
-            git diff --name-status $LAST_TAG HEAD -- artworks/*/*/index.html | awk '$1=="A"{print $2}' | awk -F'/' '{print $3}' | sort -u > new_app_ids.txt
+            echo "has_new=false" >> $GITHUB_OUTPUT
+            echo "Nothing new yet."
           fi
-          cat new_app_ids.txt
 
       - name: Take screenshots
         run: node scripts/screenshot.js
@@ -50,18 +50,18 @@ jobs:
 
       - name: Set release date
         run: echo "RELEASE_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
-        
+
       - name: Format release notes
         run: |
-          if [ -s new_app_ids.txt ]; then
-            FORMATTED_IDS=$(while read id; do echo -n "[\`$id\`](https://steamdb.info/app/$id), "; done < new_app_ids.txt | sed 's/, $//')
+          if [ -s game_ids.txt ]; then
+            FORMATTED_IDS=$(while read id; do echo -n "[\`$id\`](https://steamdb.info/app/$id), "; done < game_ids.txt | sed 's/, $//')
             echo "FORMATTED_IDS<<EOF" >> $GITHUB_ENV
             echo "$FORMATTED_IDS" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           else
             echo "FORMATTED_IDS=No new AppIDs" >> $GITHUB_ENV
           fi
-      
+
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
@@ -75,8 +75,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Clean up temporary files
+      - name: Delete game_ids.txt and commit
         if: always()
         run: |
-          rm -f game_ids.txt new_app_ids.txt
-          echo "Cleaned up temporary files"
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git rm --ignore-unmatch game_ids.txt || true
+          if ! git diff --staged --quiet; then
+            git commit -m "Clear game_ids.txt after release"
+            git push
+          fi
+          rm -f new_app_ids.txt
+          echo "Cleaned up and committed"

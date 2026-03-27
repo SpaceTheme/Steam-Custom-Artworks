@@ -21,9 +21,9 @@ Important: If the extracted files are inside another `grid` folder (i.e., `grid/
 To request/replace artwork for a game or software, [click here to open a new issue](https://github.com/SpaceTheme/Steam-Custom-Artworks/issues/new?template=ARTWORK.yml) and fill out the required information.
 
 ## 🎯 Roadmap
-- [ ] Add transparent logo
+- [x] Add transparent logo
 - [ ] Improve resolution of (p) grids
-- [ ] Automatically delete game_ids.txt after each release to ensure only new games appear in the next release
+- [x] Automatically delete game_ids.txt after each release to ensure only new games appear in the next release
 - [ ] Millennium plugin for auto update
 - [x] Add theme option to ensure the header scales correctly across all sizes
 

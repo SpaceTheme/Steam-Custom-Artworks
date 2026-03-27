@@ -146,22 +146,19 @@ jobs:
                   const imageUrlFromApi = imageData.url;
                   console.log('Selected image URL:', imageUrlFromApi);
 
-                  const extension = path.extname(new URL(imageUrlFromApi).pathname).split('?')[0] || '.png';
-                  const filename = 'imageSource' + extension;
                   const imageResponse = await axios.get(imageUrlFromApi, { responseType: 'arraybuffer' });
-                  fs.writeFileSync(filename, imageResponse.data);
-                  console.log('Downloaded file:', filename);
-
-                  const { execSync } = require('child_process');
-                  const fileType = execSync('file ' + filename).toString();
-                  if (!fileType.includes('image data')) {
-                    fs.writeFileSync('error_message.txt', 'Error: Downloaded file is not a valid image');
-                    console.error('Error: Downloaded file is not a valid image');
+                  
+                  const sharp = require('sharp');
+                  try {
+                    await sharp(imageResponse.data).webp({ quality: 90 }).toFile('imageSource.webp');
+                    console.log('Downloaded and converted image to imageSource.webp');
+                  } catch (err) {
+                    fs.writeFileSync('error_message.txt', 'Error: Downloaded file is not a valid image or conversion failed');
+                    console.error('Error converting image:', err.message);
                     process.exit(1);
                   }
-                  console.log('Downloaded file is a valid image:', fileType);
 
-                  fs.writeFileSync('image_extension.txt', extension);
+                  fs.writeFileSync('image_extension.txt', '.webp');
                 } catch (error) {
                   fs.writeFileSync('error_message.txt', 'Error processing image: ' + error.message);
                   console.error('Error fetching or processing image:', error.message);
@@ -272,12 +269,24 @@ jobs:
           rm -f steam_data.json imageSource.* image_extension.txt error_message.txt
           echo "Cleaned up temporary files"
 
+      - name: Track new AppID
+        if: success()
+        run: |
+          APP_ID="${{ fromJson(steps.issue-data.outputs.result).app_id }}"
+          touch game_ids.txt
+          if ! grep -qx "$APP_ID" game_ids.txt; then
+            echo "$APP_ID" >> game_ids.txt
+            echo "Added $APP_ID to game_ids.txt"
+          else
+            echo "$APP_ID already in game_ids.txt"
+          fi
+
       - name: Commit changes
         if: success()
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
-          git add artworks/
+          git add artworks/ game_ids.txt
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else

@@ -27,6 +27,10 @@ const path = require('path');
   fs.mkdirSync('screenshots/grid', { recursive: true });
   const gameIds = [];
   const elementIds = ['grid', 'p', 'hero'];
+  const blankPage = await browser.newPage();
+  await blankPage.setViewport({width: 1, height: 1});
+  const transparentLogoBuffer = await blankPage.screenshot({ omitBackground: true });
+  await blankPage.close();
 
   for (const file of files) {
     const appId = path.basename(path.dirname(file));
@@ -58,6 +62,8 @@ const path = require('path');
           console.log('Screenshot taken for', elementId);
         }
       }
+      fs.writeFileSync(`screenshots/grid/${appId}_logo.png`, transparentLogoBuffer);
+      console.log('Screenshot taken for logo (transparent blank)');
       gameIds.push(appId);
     } catch (error) {
       console.error('Error processing file:', file, error);
