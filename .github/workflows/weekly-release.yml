@@ -32,9 +32,10 @@ jobs:
       - name: Check for new AppIDs
         id: new-appids
         run: |
-          if [ -s game_ids.txt ]; then
+          WEEK_FILE="game_ids/$(date +%Y-W%V).txt"
+          if [ -f "$WEEK_FILE" ] && [ -s "$WEEK_FILE" ]; then
             echo "has_new=true" >> $GITHUB_OUTPUT
-            cat game_ids.txt
+            cat "$WEEK_FILE"
           else
             echo "has_new=false" >> $GITHUB_OUTPUT
             echo "Nothing new yet."
@@ -53,8 +54,9 @@ jobs:
 
       - name: Format release notes
         run: |
-          if [ -s game_ids.txt ]; then
-            FORMATTED_IDS=$(while read id; do echo -n "[\`$id\`](https://steamdb.info/app/$id), "; done < game_ids.txt | sed 's/, $//')
+          WEEK_FILE="game_ids/$(date +%Y-W%V).txt"
+          if [ -f "$WEEK_FILE" ] && [ -s "$WEEK_FILE" ]; then
+            FORMATTED_IDS=$(while read id; do echo -n "[\`$id\`](https://steamdb.info/app/$id), "; done < "$WEEK_FILE" | sed 's/, $//')
             echo "FORMATTED_IDS<<EOF" >> $GITHUB_ENV
             echo "$FORMATTED_IDS" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
@@ -80,10 +82,13 @@ jobs:
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
-          git rm --ignore-unmatch game_ids.txt || true
-          if ! git diff --staged --quiet; then
-            git commit -m "Clear game_ids.txt after release"
-            git push
+          WEEK_FILE="game_ids/$(date +%Y-W%V).txt"
+          if [ -f "$WEEK_FILE" ]; then
+            git rm "$WEEK_FILE" || true
+            if ! git diff --staged --quiet; then
+              git commit -m "Clear $WEEK_FILE after release"
+              git push
+            fi
           fi
           rm -f new_app_ids.txt
           echo "Cleaned up and committed"

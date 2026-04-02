@@ -273,12 +273,14 @@ jobs:
         if: success()
         run: |
           APP_ID="${{ fromJson(steps.issue-data.outputs.result).app_id }}"
-          touch game_ids.txt
-          if ! grep -qx "$APP_ID" game_ids.txt; then
-            echo "$APP_ID" >> game_ids.txt
-            echo "Added $APP_ID to game_ids.txt"
+          WEEK_FILE="game_ids/$(date +%Y-W%V).txt"
+          mkdir -p game_ids
+          touch "$WEEK_FILE"
+          if ! grep -qx "$APP_ID" "$WEEK_FILE"; then
+            echo "$APP_ID" >> "$WEEK_FILE"
+            echo "Added $APP_ID to $WEEK_FILE"
           else
-            echo "$APP_ID already in game_ids.txt"
+            echo "$APP_ID already in $WEEK_FILE"
           fi
 
       - name: Commit changes
@@ -286,7 +288,7 @@ jobs:
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
-          git add artworks/ game_ids.txt
+          git add artworks/ game_ids/
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
