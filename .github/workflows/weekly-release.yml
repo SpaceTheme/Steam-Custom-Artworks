@@ -32,13 +32,23 @@ jobs:
       - name: Check for new AppIDs
         id: new-appids
         run: |
-          WEEK_FILE="game_ids/$(date +%Y-W%V).txt"
-          if [ -f "$WEEK_FILE" ] && [ -s "$WEEK_FILE" ]; then
-            echo "has_new=true" >> $GITHUB_OUTPUT
-            cat "$WEEK_FILE"
-          else
+          # Calculate last Sunday at 00:00 UTC
+          LAST_SUNDAY=$(date -d "last Sunday 00:00 UTC" -u +"%Y-%m-%dT%H:%M:%S")
+          
+          # Get all commits since last Sunday with the format "Add artwork for app XXXX"
+          COMMIT_HISTORY=$(git log --since="$LAST_SUNDAY" --pretty=format:"%s" origin/main)
+          
+          # Extract all app IDs from commit messages
+          APP_IDS=$(echo "$COMMIT_HISTORY" | grep -oP 'Add artwork for app \K[0-9]+' | sort -u)
+          
+          if [ -z "$APP_IDS" ]; then
             echo "has_new=false" >> $GITHUB_OUTPUT
             echo "Nothing new yet."
+          else
+            echo "has_new=true" >> $GITHUB_OUTPUT
+            echo "Found AppIDs: $APP_IDS"
+            # Save for later use
+            echo "$APP_IDS" > /tmp/app_ids.txt
           fi
 
       - name: Take screenshots
@@ -54,9 +64,8 @@ jobs:
 
       - name: Format release notes
         run: |
-          WEEK_FILE="game_ids/$(date +%Y-W%V).txt"
-          if [ -f "$WEEK_FILE" ] && [ -s "$WEEK_FILE" ]; then
-            FORMATTED_IDS=$(while read id; do echo -n "[\`$id\`](https://steamdb.info/app/$id), "; done < "$WEEK_FILE" | sed 's/, $//')
+          if [ -f /tmp/app_ids.txt ] && [ -s /tmp/app_ids.txt ]; then
+            FORMATTED_IDS=$(while read id; do echo -n "[\`$id\`](https://steamdb.info/app/$id), "; done < /tmp/app_ids.txt | sed 's/, $//')
             echo "FORMATTED_IDS<<EOF" >> $GITHUB_ENV
             echo "$FORMATTED_IDS" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
@@ -77,18 +86,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete game_ids.txt and commit
+      - name: Cleanup
         if: always()
         run: |
-          git config user.name "GitHub Action"
-          git config user.email "action@github.com"
-          WEEK_FILE="game_ids/$(date +%Y-W%V).txt"
-          if [ -f "$WEEK_FILE" ]; then
-            git rm "$WEEK_FILE" || true
-            if ! git diff --staged --quiet; then
-              git commit -m "Clear $WEEK_FILE after release"
-              git push
-            fi
-          fi
-          rm -f new_app_ids.txt
-          echo "Cleaned up and committed"
+          rm -f /tmp/app_ids.txt
+          echo "Cleaned up temporary files"

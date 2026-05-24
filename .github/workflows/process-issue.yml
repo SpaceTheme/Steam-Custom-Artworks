@@ -269,31 +269,32 @@ jobs:
           rm -f steam_data.json imageSource.* image_extension.txt error_message.txt
           echo "Cleaned up temporary files"
 
-      - name: Track new AppID
-        if: success()
-        run: |
-          APP_ID="${{ fromJson(steps.issue-data.outputs.result).app_id }}"
-          WEEK_FILE="game_ids/$(date +%Y-W%V).txt"
-          mkdir -p game_ids
-          touch "$WEEK_FILE"
-          if ! grep -qx "$APP_ID" "$WEEK_FILE"; then
-            echo "$APP_ID" >> "$WEEK_FILE"
-            echo "Added $APP_ID to $WEEK_FILE"
-          else
-            echo "$APP_ID already in $WEEK_FILE"
-          fi
-
       - name: Commit changes
         if: success()
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
-          git add artworks/ game_ids/
+          git add artworks/
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
             git commit -m "Add artwork for app ${{ fromJson(steps.issue-data.outputs.result).app_id }}"
+            push_success=false
             for i in {1..10}; do
-              git pull --rebase origin main && git push && break || sleep 10
+              if git pull --rebase origin main && git push; then
+                push_success=true
+                echo "Successfully pushed on attempt $i"
+                break
+              else
+                git rebase --abort 2>/dev/null || true
+                if [ $i -lt 10 ]; then
+                  sleep $((i * 5))
+                fi
+              fi
             done
+            
+            if [ "$push_success" = false ]; then
+              echo "Failed to push after 10 attempts"
+              exit 1
+            fi
           fi
