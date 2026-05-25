@@ -35,8 +35,20 @@ jobs:
       - name: Check for new AppIDs
         id: new-appids
         run: |
-          # Calculate last Sunday at 00:00 UTC
-          LAST_SUNDAY=$(date -d "last Sunday 00:00 UTC" -u +"%Y-%m-%dT%H:%M:%S")
+          # Get the date of the last release tag (e.g., v20260525)
+          LAST_RELEASE_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$LAST_RELEASE_TAG" ]; then
+            # No previous tags, use a very old date
+            LAST_RELEASE_DATE=$(date -d "2000-01-01" -u +"%Y-%m-%dT%H:%M:%S")
+            echo "No previous release tag found, using 2000-01-01"
+          else
+            # Extract date from tag (e.g., v20260525 -> 2026-05-25)
+            TAG_DATE=$(echo "$LAST_RELEASE_TAG" | sed 's/v//')
+            FORMATTED_DATE=$(echo "$TAG_DATE" | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1-\2-\3/')
+            LAST_RELEASE_DATE=$(date -d "$FORMATTED_DATE" -u +"%Y-%m-%dT%H:%M:%S")
+            echo "Last release was: $LAST_RELEASE_TAG ($LAST_RELEASE_DATE)"
+          fi
           
           # Get all commits since the last release with the format "Add artwork for app XXXX"
           COMMIT_HISTORY=$(git log --since="$LAST_RELEASE_DATE" --pretty=format:"%s" origin/main)
@@ -46,7 +58,7 @@ jobs:
           
           if [ -z "$APP_IDS" ]; then
             echo "has_new=false" >> $GITHUB_OUTPUT
-            echo "Nothing new yet."
+            echo "Nothing new since last release."
           else
             echo "has_new=true" >> $GITHUB_OUTPUT
             echo "Found AppIDs: $APP_IDS"
