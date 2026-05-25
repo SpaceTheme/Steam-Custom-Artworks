@@ -53,6 +53,10 @@ jobs:
             # Get all commits between the last release and current branch
             COMMIT_HISTORY=$(git log ${LAST_COMMIT_SHA}..origin/main --pretty=format:"%s")
             echo "Last release was: $LAST_RELEASE_INFO"
+            echo "Total commits since last release:"
+            echo "$COMMIT_HISTORY" | wc -l
+            echo "Sample commits:"
+            echo "$COMMIT_HISTORY" | head -20
           fi
           
           # Extract all app IDs from commit messages
@@ -61,6 +65,8 @@ jobs:
           if [ -z "$APP_IDS" ]; then
             echo "has_new=false" >> $GITHUB_OUTPUT
             echo "Nothing new since last release."
+            echo "Debug: All commits (looking for pattern 'Add artwork for app'):"
+            echo "$COMMIT_HISTORY" | head -50
           else
             echo "has_new=true" >> $GITHUB_OUTPUT
             echo "Found AppIDs: $APP_IDS"
