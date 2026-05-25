@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fetch all tags
+        run: git fetch --tags
+
       - name: Check for new AppIDs
         id: new-appids
         run: |
