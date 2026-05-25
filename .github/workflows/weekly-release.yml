@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install cwebp
         run: sudo apt-get update && sudo apt-get install -y webp
@@ -33,7 +35,9 @@ jobs:
         run: npm ci
 
       - name: Fetch repository data
-        run: git fetch --tags --prune origin
+        run: |
+          git fetch --tags origin
+          git fetch --unshallow origin main 2>/dev/null || git fetch origin main
 
       - name: Check for new AppIDs
         id: new-appids
