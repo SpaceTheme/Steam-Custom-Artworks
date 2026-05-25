@@ -130,19 +130,6 @@ jobs:
                     console.error('Error: Image must be Static');
                     process.exit(1);
                   }
-                  /*
-                  if (imageData.width !== 3840 || imageData.height !== 1240) {
-                    fs.writeFileSync('error_message.txt', 'Error: Image resolution must be 3840x1240, found: ' + imageData.width + 'x' + imageData.height);
-                    console.error('Error: Image resolution must be 3840x1240');
-                    process.exit(1);
-                  }
-                  */
-                  // Remove after the library are bigger
-                  if ( !( (imageData.width === 3840 && imageData.height === 1240) || (imageData.width === 1920 && imageData.height === 620) ) ) {
-                    fs.writeFileSync('error_message.txt', 'Error: Image resolution must be 3840x1240 or 1920x620, found: ' + imageData.width + 'x' + imageData.height);
-                    console.error('Error: Image resolution must be 3840x1240 or 1920x620');
-                    process.exit(1);
-                  }
                   const imageUrlFromApi = imageData.url;
                   console.log('Selected image URL:', imageUrlFromApi);
 
