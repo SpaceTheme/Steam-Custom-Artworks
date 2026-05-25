@@ -32,20 +32,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fetch repository data
+        run: git fetch --tags --prune origin
+
       - name: Check for new AppIDs
         id: new-appids
         run: |
-          LAST_RELEASE_TAG=$(git ls-remote --tags origin | grep -oP 'refs/tags/v\K[0-9]+' | sort -V | tail -1)
-          [ -n "$LAST_RELEASE_TAG" ] && LAST_RELEASE_TAG="v$LAST_RELEASE_TAG"
+          # Get the commit SHA of the last release tag
+          LAST_RELEASE_INFO=$(git ls-remote --tags origin | grep -oP 'refs/tags/v[0-9]{8}' | sort -V | tail -1)
           
-          if [ -z "$LAST_RELEASE_TAG" ]; then
+          if [ -z "$LAST_RELEASE_INFO" ]; then
             # No previous tags, get all commits
             COMMIT_HISTORY=$(git log --pretty=format:"%s" origin/main)
             echo "No previous release tag found, using all commits"
           else
-            # Get all commits between the last release tag and current branch
-            COMMIT_HISTORY=$(git log ${LAST_RELEASE_TAG}..origin/main --pretty=format:"%s")
-            echo "Last release was: $LAST_RELEASE_TAG"
+            # Get commit SHA of the last tag
+            LAST_COMMIT_SHA=$(git ls-remote --tags origin "$LAST_RELEASE_INFO" | awk '{print $1}')
+            echo "Last release commit: $LAST_COMMIT_SHA"
+            
+            # Get all commits between the last release and current branch
+            COMMIT_HISTORY=$(git log ${LAST_COMMIT_SHA}..origin/main --pretty=format:"%s")
+            echo "Last release was: $LAST_RELEASE_INFO"
           fi
           
           # Extract all app IDs from commit messages
