@@ -48,11 +48,9 @@ jobs:
             const body = issue.data.body;
             const appIdMatch = body.match(/### App ID\n\n(\S+)/);
             const imageUrlMatch = body.match(/### Image URL\n\n(https\S+)/);
-            const artworkTypeMatch = body.match(/### Artwork Type\n\n(Game|Software)/);
             return {
               app_id: appIdMatch ? appIdMatch[1] : '',
-              image_url: imageUrlMatch ? imageUrlMatch[1] : '',
-              artwork_type: artworkTypeMatch ? artworkTypeMatch[1] : ''
+              image_url: imageUrlMatch ? imageUrlMatch[1] : ''
             };
 
       - name: Fetch Steam API data

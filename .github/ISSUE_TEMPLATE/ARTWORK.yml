@@ -3,16 +3,6 @@ description: Request a new artwork for a game or software.
 title: "!!! DON'T CHANGE !!!"
 labels: [request]
 body:
-- type: dropdown
-  id: artwork_type
-  attributes:
-    label: App Type
-    options:
-      - Game
-      - Software
-    default: 0
-  validations:
-    required: true
 - type: input
   id: app_id
   attributes:
