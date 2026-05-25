@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 (async () => {
   console.log('Starting screenshot process');
@@ -25,7 +26,6 @@ const path = require('path');
   }
 
   fs.mkdirSync('screenshots/grid', { recursive: true });
-  const gameIds = [];
   const elementIds = ['grid', 'p', 'hero'];
   const blankPage = await browser.newPage();
   await blankPage.setViewport({width: 1, height: 1});
@@ -64,7 +64,6 @@ const path = require('path');
       }
       fs.writeFileSync(`screenshots/grid/${appId}_logo.png`, transparentLogoBuffer);
       console.log('Screenshot taken for logo (transparent blank)');
-      gameIds.push(appId);
     } catch (error) {
       console.error('Error processing file:', file, error);
     }
@@ -72,6 +71,26 @@ const path = require('path');
 
   console.log('Closing browser');
   await browser.close();
-  fs.writeFileSync('game_ids.txt', gameIds.join('\n'));
-  console.log('Game IDs saved:', gameIds);
+
+  // Convert PNG to WebP and back to PNG
+  console.log('Starting PNG to WebP conversion');
+  try {
+    const screenshotDir = 'screenshots/grid';
+    // Convert all PNG files to WebP with quality 90
+    execSync(`cd ${screenshotDir} && for i in *.png; do cwebp -q 90 "$i" -o "\${i%.png}.webp"; done`, {
+      stdio: 'inherit',
+      shell: '/bin/bash'
+    });
+    console.log('PNG to WebP conversion completed');
+
+    // Rename WebP files back to PNG
+    execSync(`cd ${screenshotDir} && for i in *.webp; do mv "$i" "\${i%.webp}.png"; done`, {
+      stdio: 'inherit',
+      shell: '/bin/bash'
+    });
+    console.log('WebP to PNG renaming completed');
+  } catch (error) {
+    console.error('Error during image conversion:', error);
+    process.exit(1);
+  }
 })();

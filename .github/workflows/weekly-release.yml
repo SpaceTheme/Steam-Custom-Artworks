@@ -12,6 +12,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install cwebp
+        run: sudo apt-get update && sudo apt-get install -y libwebp-tools
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
@@ -35,10 +38,10 @@ jobs:
           # Calculate last Sunday at 00:00 UTC
           LAST_SUNDAY=$(date -d "last Sunday 00:00 UTC" -u +"%Y-%m-%dT%H:%M:%S")
           
-          # Get all commits since last Sunday with the format "Add artwork for app XXXX"
-          COMMIT_HISTORY=$(git log --since="$LAST_SUNDAY" --pretty=format:"%s" origin/main)
+          # Get all commits since the last release with the format "Add artwork for app XXXX"
+          COMMIT_HISTORY=$(git log --since="$LAST_RELEASE_DATE" --pretty=format:"%s" origin/main)
           
-          # Extract all app IDs from commit messages
+          # Extract all app IDs from commit messages (excluding the release commit itself)
           APP_IDS=$(echo "$COMMIT_HISTORY" | grep -oP 'Add artwork for app \K[0-9]+' | sort -u)
           
           if [ -z "$APP_IDS" ]; then
