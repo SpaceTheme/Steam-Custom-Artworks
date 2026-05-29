@@ -58,7 +58,7 @@ jobs:
       - name: Auto trigger process for trusted users
         if: github.event_name == 'issues'
         run: |
-          if [ "${ISSUE_CREATOR}" = "SpaceEnergy" ] || [ "${ISSUE_CREATOR}" = "noxygalaxy" ] || [ "${ISSUE_CREATOR}" = "nomd346" ]; then
+          if [ "${ISSUE_CREATOR}" = "SpaceEnergy" ] || [ "${ISSUE_CREATOR}" = "noxygalaxy" ] || [ "${ISSUE_CREATOR}" = "nomd346" ] || [ "${ISSUE_CREATOR}" = "theygotti" ]; then
             echo "Authorized creator. Triggering process workflow."
             echo "TRIGGER_PROCESS=true" >> $GITHUB_ENV
           fi
