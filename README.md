@@ -30,3 +30,7 @@ To request/replace artwork for a game or software, [click here to open a new iss
 ## 🙌 Contributors
 - [@SpaceEnergy](https://github.com/SpaceEnergy) - Idea & Design  
 - [@noxygalaxy](https://github.com/noxygalaxy) - Workflow Automation
+
+## See also
+
+- [Meccha Chameleon Atlas](https://mecchachameleon.art/) — Fan-maintained hide-spots reference, paint-match notes, and seeker counter-tips for the paint-based hide-and-seek game Meccha Chameleon. Unofficial, not affiliated with the developer.
