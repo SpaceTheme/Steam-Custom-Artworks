@@ -2,83 +2,53 @@ name: Handle Issues
 
 on:
   issues:
-    types: [opened]
+    types: [opened, edited]
   issue_comment:
     types: [created]
 
+permissions:
+  contents: write # needed to dispatch the process-issue workflow
+  issues: write
+
+env:
+  # Comma-separated GitHub usernames
+  MAINTAINERS: SpaceEnergy,noxygalaxy # may run /process
+  TRUSTED_REQUESTERS: SpaceEnergy,noxygalaxy,nomd346,theygotti # requests are processed automatically
+
 jobs:
-  handle-issue:
+  triage:
+    # Only issues created from the artwork request template
+    if: github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'request')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: triage-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout scripts
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+
+      - name: Check request
+        uses: actions/github-script@v7
+        env:
+          STEAMGRIDDB_API_KEY: ${{ secrets.STEAMGRIDDB_API_KEY }}
+        with:
+          script: await require('./scripts/issue-bot.js').triage({ github, context, core })
+
+  process-command:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      !github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/process')
     runs-on: ubuntu-latest
     steps:
-      - name: Rename Issue
-        if: github.event_name == 'issues'
-        uses: actions/github-script@v6
+      - name: Checkout scripts
+        uses: actions/checkout@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const match = context.payload.issue.body.match(/### App ID\n\n(\S+)/);
-            const appId = match ? match[1] : null;
-      
-            if (!appId) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: 'Error: App ID not found in the issue body. Please provide a valid App ID.'
-              });
-              core.setFailed("App ID not found in the issue body.");
-              return;
-            }
-      
-            const newTitle = `[Request] ${appId}`;
-            await github.rest.issues.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              title: newTitle
-            });
+          sparse-checkout: scripts
 
-      - name: Post message on issue opened
-        if: github.event_name == 'issues'
-        uses: actions/github-script@v6
+      - name: Start processing
+        uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: 'Thank you for your submission! SpaceEnergy or noxygalaxy is looking at this and needs to run `/process`.'
-            });
-
-      - name: Set issue creator
-        if: github.event_name == 'issues'
-        run: echo "ISSUE_CREATOR=${{ github.event.issue.user.login }}" >> $GITHUB_ENV
-
-      - name: Auto trigger process for trusted users
-        if: github.event_name == 'issues'
-        run: |
-          if [ "${ISSUE_CREATOR}" = "SpaceEnergy" ] || [ "${ISSUE_CREATOR}" = "noxygalaxy" ] || [ "${ISSUE_CREATOR}" = "nomd346" ] || [ "${ISSUE_CREATOR}" = "theygotti" ]; then
-            echo "Authorized creator. Triggering process workflow."
-            echo "TRIGGER_PROCESS=true" >> $GITHUB_ENV
-          fi
-
-      - name: Check for /process comment
-        if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/process')
-        env:
-          SENDER: ${{ github.event.comment.user.login }}
-        run: |
-          if [ "$SENDER" != "SpaceEnergy" ] && [ "$SENDER" != "noxygalaxy" ]; then
-            echo "Unauthorized: Only SpaceEnergy & noxygalaxy can run /process"
-            exit 1
-          fi
-          echo "Authorized user. Triggering process workflow."
-          echo "TRIGGER_PROCESS=true" >> $GITHUB_ENV
-
-      - name: Dispatch process workflow
-        if: env.TRIGGER_PROCESS == 'true'
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: process-issue
-          client-payload: '{"issue_number": ${{ github.event.issue.number }}}'
+          script: await require('./scripts/issue-bot.js').processCommand({ github, context, core })

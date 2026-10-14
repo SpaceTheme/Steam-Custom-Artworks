@@ -5,6 +5,9 @@ on:
     - cron: "0 0 * * 0" # every Sunday at 00:00 UTC
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   screenshot:
     runs-on: ubuntu-latest
@@ -12,32 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Install cwebp
-        run: sudo apt-get update && sudo apt-get install -y webp
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18"
-          cache: "npm"
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Fetch repository data
-        run: |
-          git fetch --tags origin
-          git fetch --unshallow origin main 2>/dev/null || git fetch origin main
+          fetch-depth: 0 # full history and tags, needed to find new AppIDs
 
       - name: Check for new AppIDs
         id: new-appids
@@ -78,18 +56,44 @@ jobs:
             echo "$APP_IDS" > /tmp/app_ids.txt
           fi
 
+          # Scheduled runs skip the release when nothing is new; manual runs always release.
+          if [ -n "$APP_IDS" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "release=true" >> $GITHUB_OUTPUT
+          else
+            echo "release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install cwebp
+        if: steps.new-appids.outputs.release == 'true'
+        run: sudo apt-get update && sudo apt-get install -y webp
+
+      - name: Set up Node.js
+        if: steps.new-appids.outputs.release == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        if: steps.new-appids.outputs.release == 'true'
+        run: npm ci
+
       - name: Take screenshots
+        if: steps.new-appids.outputs.release == 'true'
         run: node scripts/screenshot.js
 
       - name: Create zip
+        if: steps.new-appids.outputs.release == 'true'
         run: |
           cd screenshots
           zip -r ../grid.zip grid
 
       - name: Set release date
+        if: steps.new-appids.outputs.release == 'true'
         run: echo "RELEASE_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
 
       - name: Format release notes
+        if: steps.new-appids.outputs.release == 'true'
         run: |
           if [ -f /tmp/app_ids.txt ] && [ -s /tmp/app_ids.txt ]; then
             FORMATTED_IDS=$(while read id; do echo -n "[\`$id\`](https://steamdb.info/app/$id), "; done < /tmp/app_ids.txt | sed 's/, $//')
@@ -101,7 +105,8 @@ jobs:
           fi
 
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        if: steps.new-appids.outputs.release == 'true'
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ env.RELEASE_DATE }}"
           name: "v${{ env.RELEASE_DATE }}"

@@ -1,21 +1,102 @@
-name: Request Artwork
-description: Request a new artwork for a game or software.
-title: "!!! DON'T CHANGE !!!"
+name: 🎨 Request or replace an artwork
+description: Ask for a new artwork for a Steam game or software, or for a better image on an existing one.
+title: "[Request] "
 labels: [request]
 body:
-- type: input
-  id: app_id
-  attributes:
-    label: App ID
-    description: The App ID of the game or software. - You can find it on https://steamdb.info or https://store.steampowered.com
-    placeholder: "570"
-  validations:
-    required: true
-- type: input
-  id: image
-  attributes:
-    label: Image URL
-    description: Only SteamGridDB links are allowed. Allowed filters are style "Alternate", file type "PNG" and "JPEG/JPG", tag "Untagged" and "Static" images. - You can find it on https://steamgriddb.com
-    placeholder: "https://www.steamgriddb.com/hero/11836"
-  validations:
-    required: true
+  - type: markdown
+    attributes:
+      value: |
+        ## Thanks for your request! 👋
+        All artworks share the same style, so we only need **two things** from you:
+        1. The **Steam App ID** of the game
+        2. A **hero image** from SteamGridDB that follows the rules below
+
+        Game name, publisher and release date are filled in automatically from the Steam Store and SteamDB.
+        Within a minute of submitting, a bot checks your request and tells you if anything needs to be fixed.
+
+        > [!TIP]
+        > You don't need to change the title. It is set automatically.
+
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: Request type
+      description: Choose **Replace** if the game already has an artwork and you want a different image.
+      options:
+        - New artwork
+        - Replace existing artwork
+      default: 0
+    validations:
+      required: true
+
+  - type: input
+    id: app_id
+    attributes:
+      label: App ID
+      description: |
+        The number in the game's Steam store link: `store.steampowered.com/app/570/Dota_2` → **`570`**
+        You can also paste the full Steam Store or [SteamDB](https://steamdb.info) link. The number is taken from it automatically.
+      placeholder: "570"
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ### 🖼️ How to find the right image
+        1. Open [steamgriddb.com](https://www.steamgriddb.com) and search for the game.
+        2. Open the **Heroes** tab. Heroes are the wide banner images, not Grids, Logos or Icons.
+        3. Set the filters to **Style:** Alternate · **Type:** Static · **Tags:** Untagged · **File type:** PNG or JPEG.
+        4. Click the image you like and **copy the link from your browser's address bar**.
+
+        | | Example |
+        |---|---|
+        | ✅ Correct | `https://www.steamgriddb.com/hero/11836` |
+        | ❌ Game page | `https://www.steamgriddb.com/game/5248474` |
+        | ❌ Direct file | `https://cdn2.steamgriddb.com/hero/....png` |
+        | ❌ Not a hero | `https://www.steamgriddb.com/grid/123456` |
+
+  - type: input
+    id: image
+    attributes:
+      label: Image URL
+      description: The link to a single SteamGridDB hero image (see the steps above).
+      placeholder: "https://www.steamgriddb.com/hero/11836"
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ### ✏️ Optional: only if Steam has missing or wrong info
+        **Leave these fields empty in most cases.** Only fill them in if the bot says that something couldn't be found
+        (this often happens with games that were removed from Steam) or if the detected info is wrong.
+        Anything you enter here replaces the data from Steam.
+
+  - type: input
+    id: name
+    attributes:
+      label: Game name (optional)
+      placeholder: "Dota 2"
+
+  - type: input
+    id: publisher
+    attributes:
+      label: Publisher (optional)
+      description: Shown on the artwork as "An **Publisher** Production".
+      placeholder: "Valve"
+
+  - type: input
+    id: release
+    attributes:
+      label: Release date (optional)
+      description: "Format: `Mon D, YYYY`"
+      placeholder: "Jul 9, 2013"
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the [existing requests](https://github.com/SpaceTheme/Steam-Custom-Artworks/issues?q=is%3Aissue+label%3Arequest) and this game hasn't been requested yet (or I want to replace its image).
+          required: true

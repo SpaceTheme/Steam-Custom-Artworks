@@ -18,7 +18,8 @@ Important: If the extracted files are inside another `grid` folder (i.e., `grid/
 1. Restart Steam.
 
 ## 🗳️ Requests/Replace
-To request/replace artwork for a game or software, [click here to open a new issue](https://github.com/SpaceTheme/Steam-Custom-Artworks/issues/new?template=ARTWORK.yml) and fill out the required information.
+To request/replace artwork for a game or software, [click here to open a new issue](https://github.com/SpaceTheme/Steam-Custom-Artworks/issues/new?template=ARTWORK.yml) and fill out the required information.<br>
+You only need the Steam App ID and a SteamGridDB hero link. Name, publisher and release date are taken from the Steam Store or SteamDB. A bot checks your request within a minute and tells you if something needs to be fixed.
 
 ## 🎯 Roadmap
 - [x] Add transparent logo

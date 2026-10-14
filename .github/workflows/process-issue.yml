@@ -4,6 +4,10 @@ on:
   repository_dispatch:
     types: [process-issue]
 
+permissions:
+  contents: write
+  issues: write
+
 concurrency:
   group: process-issue-${{ github.event.client_payload.issue_number }}
   cancel-in-progress: false
@@ -11,275 +15,64 @@ concurrency:
 jobs:
   process:
     runs-on: ubuntu-latest
+    env:
+      ISSUE_NUMBER: ${{ github.event.client_payload.issue_number }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Fetch issue data
-        uses: actions/github-script@v6
-        id: issue-data
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const issue = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ github.event.client_payload.issue_number }}
-            });
-            const body = issue.data.body;
-            const appIdMatch = body.match(/### App ID\n\n(\S+)/);
-            const imageUrlMatch = body.match(/### Image URL\n\n(https\S+)/);
-            return {
-              app_id: appIdMatch ? appIdMatch[1] : '',
-              image_url: imageUrlMatch ? imageUrlMatch[1] : ''
-            };
-
-      - name: Fetch Steam API data
-        id: steam-data
         env:
-          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
-        run: |
-          node -e "
-            const axios = require('axios');
-            const fs = require('fs');
-            (async () => {
-              try {
-                const apiKey = process.env.STEAM_API_KEY;
-                const response = await axios.get('https://store.steampowered.com/api/appdetails?key=${apiKey}&appids=${{ fromJson(steps.issue-data.outputs.result).app_id }}');
-                const data = response.data;
-                fs.writeFileSync('steam_data.json', JSON.stringify(data));
-              } catch (error) {
-                console.error('Error fetching Steam API:', error.message);
-                process.exit(1);
-              }
-            })();
-          "
+          PUPPETEER_SKIP_DOWNLOAD: 'true' # Chrome is only needed for the weekly release
 
-      - name: Validate and download image
+      - name: Read request from issue
+        uses: actions/github-script@v7
+        with:
+          script: await require('./scripts/issue-bot.js').readRequest({ github, context })
+
+      - name: Build artwork
+        id: build
         env:
           STEAMGRIDDB_API_KEY: ${{ secrets.STEAMGRIDDB_API_KEY }}
-        run: |
-            node -e "
-              const axios = require('axios');
-              const fs = require('fs');
-              const path = require('path');
-              (async () => {
-                const issueNumber = ${{ github.event.client_payload.issue_number }};
-                try {
-                  const imageUrl = '${{ fromJson(steps.issue-data.outputs.result).image_url }}';
-                  const apiKey = process.env.STEAMGRIDDB_API_KEY;
-                  if (!apiKey) {
-                    fs.writeFileSync('error_message.txt', 'Error: STEAMGRIDDB_API_KEY is not set');
-                    console.error('Error: STEAMGRIDDB_API_KEY is not set');
-                    process.exit(1);
-                  }
+        run: node scripts/process-issue.js request.json result.json
 
-                  const url = new URL(imageUrl);
-                  const gameIdMatch = url.pathname.match(/\/hero\/(\d+)/);
-                  if (!gameIdMatch || !gameIdMatch[1]) {
-                    fs.writeFileSync('error_message.txt', 'Error: Invalid SteamGridDB URL format: ' + imageUrl);
-                    console.error('Error: Invalid SteamGridDB URL format:', imageUrl);
-                    process.exit(1);
-                  }
-                  const gameId = gameIdMatch[1];
-                  console.log('Extracted SteamGridDB game ID:', gameId);
-
-                  console.log('Fetching image from SteamGridDB API for game ID:', gameId);
-                  const response = await axios.get('https://www.steamgriddb.com/api/v2/heroes/' + gameId, {
-                    headers: { Authorization: 'Bearer ' + apiKey }
-                  });
-                  const imageData = response.data.data;
-                  if (!response.data.success || !imageData.url) {
-                    fs.writeFileSync('error_message.txt', 'Error: Invalid API response or missing image URL for game ID ' + gameId);
-                    console.error('Error: Invalid API response or missing image URL');
-                    process.exit(1);
-                  }
-                  if (imageData.style !== 'alternate') {
-                    fs.writeFileSync('error_message.txt', 'Error: Image style must be Alternate, found: ' + imageData.style);
-                    console.error('Error: Image style must be Alternate');
-                    process.exit(1);
-                  }
-                  if (imageData.tags?.length > 0) {
-                    fs.writeFileSync('error_message.txt', 'Error: Image must be Untagged, found tags: ' + imageData.tags.join(', '));
-                    console.error('Error: Image must be Untagged');
-                    process.exit(1);
-                  }
-                  if (imageData.animated) {
-                    fs.writeFileSync('error_message.txt', 'Error: Image must be Static');
-                    console.error('Error: Image must be Static');
-                    process.exit(1);
-                  }
-                  const imageUrlFromApi = imageData.url;
-                  console.log('Selected image URL:', imageUrlFromApi);
-
-                  const imageResponse = await axios.get(imageUrlFromApi, { responseType: 'arraybuffer' });
-                  
-                  const sharp = require('sharp');
-                  try {
-                    await sharp(imageResponse.data).webp({ quality: 90 }).toFile('imageSource.webp');
-                    console.log('Downloaded and converted image to imageSource.webp');
-                  } catch (err) {
-                    fs.writeFileSync('error_message.txt', 'Error: Downloaded file is not a valid image or conversion failed');
-                    console.error('Error converting image:', err.message);
-                    process.exit(1);
-                  }
-
-                  fs.writeFileSync('image_extension.txt', '.webp');
-                } catch (error) {
-                  fs.writeFileSync('error_message.txt', 'Error processing image: ' + error.message);
-                  console.error('Error fetching or processing image:', error.message);
-                  process.exit(1);
-                }
-              })();
-            "
-
-      - name: Post error comment if validation failed
-        if: failure()
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            if (fs.existsSync('error_message.txt')) {
-              const errorMessage = fs.readFileSync('error_message.txt', 'utf8').trim();
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: ${{ github.event.client_payload.issue_number }},
-                body: errorMessage
-              });
-            }
-
-      - name: Generate HTML
-        if: success()
-        run: |
-            node -e "
-              const Mustache = require('mustache');
-              const fs = require('fs');
-              const path = require('path');
-          
-              const steamData = JSON.parse(fs.readFileSync('steam_data.json', 'utf8'));
-              const extension = fs.readFileSync('image_extension.txt', 'utf8').trim();
-              const appId = '${{ fromJson(steps.issue-data.outputs.result).app_id }}';
-          
-              if (!steamData[appId]) {
-                throw new Error('Steam data missing for appId: ' + appId);
-              }
-          
-              const data = steamData[appId].data;
-              const publisherRaw = data.publishers?.[0] || 'Unknown';
-              const publisher = publisherRaw.replace(/[^a-zA-Z0-9]/g, '_');
-          
-              const dir = path.join('artworks', publisher, appId);
-              console.log('Saving to directory:', dir);
-          
-              if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-              }
-        
-              const template = fs.readFileSync('templates/index.html.mustache', 'utf8');
-              const output = Mustache.render(template, {
-                APP_NAME: data.name,
-                APP_PUBLISHER: publisherRaw,
-                APP_RELEASE: data.release_date?.date || 'Unknown',
-                IMAGE_NAME: 'imageSource' + extension
-              });
-        
-              const indexPath = path.join(dir, 'index.html');
-              fs.writeFileSync(indexPath, output);
-              console.log('index.html saved at:', indexPath);
-        
-              const indexCssPath = 'templates/index.css';
-              if (fs.existsSync(indexCssPath)) {
-                const cssDest = path.join(dir, 'index.css');
-                fs.copyFileSync(indexCssPath, cssDest);
-                console.log('index.css copied to:', cssDest);
-              } else {
-                console.error('Error: index.css not found');
-              }
-        
-              const imageFile = 'imageSource' + extension;
-              if (fs.existsSync(imageFile)) {
-                const imageDest = path.join(dir, 'imageSource' + extension);
-                fs.renameSync(imageFile, imageDest);
-                console.log('Image saved at:', imageDest);
-              } else {
-                console.error('Error: image file not found');
-              }
-        
-              console.log('Files created:', fs.readdirSync(dir));
-            "
-
-      - name: Post release comment and close issue
-        if: success()
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ github.event.client_payload.issue_number }},
-              body: 'The artwork will be included in the next release. Please be patient until then.'
-            });
-            await github.rest.issues.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ github.event.client_payload.issue_number }},
-              state: 'closed'
-            });
-
-      - name: Clean up temporary files
-        if: always()
-        run: |
-          rm -f steam_data.json imageSource.* image_extension.txt error_message.txt
-          echo "Cleaned up temporary files"
-
-      - name: Commit changes
-        if: success()
+      - name: Commit and push
+        id: push
+        if: steps.build.outputs.ok == 'true'
+        env:
+          APP_ID: ${{ steps.build.outputs.app_id }}
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
-          git add artworks/
+          git add -A artworks/
           if git diff --staged --quiet; then
             echo "No changes to commit"
-          else
-            git commit -m "Add artwork for app ${{ fromJson(steps.issue-data.outputs.result).app_id }}"
-            push_success=false
-            for i in {1..10}; do
-              if git pull --rebase origin main && git push; then
-                push_success=true
-                echo "Successfully pushed on attempt $i"
-                break
-              else
-                git rebase --abort 2>/dev/null || true
-                if [ $i -lt 10 ]; then
-                  sleep $((i * 5))
-                fi
-              fi
-            done
-            
-            if [ "$push_success" = false ]; then
-              echo "Failed to push after 10 attempts"
-              exit 1
-            fi
+            exit 0
           fi
+          # The weekly release collects app IDs from "Add artwork for app <id>" commit messages.
+          git commit -m "Add artwork for app ${APP_ID} (#${ISSUE_NUMBER})"
+          for i in $(seq 1 10); do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              echo "Pushed on attempt $i"
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((i * 5))
+          done
+          echo "::error::Failed to push after 10 attempts"
+          exit 1
+
+      - name: Report result on issue
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          PUSH_OUTCOME: ${{ steps.push.outcome }}
+        with:
+          script: await require('./scripts/issue-bot.js').report({ github, context, core })

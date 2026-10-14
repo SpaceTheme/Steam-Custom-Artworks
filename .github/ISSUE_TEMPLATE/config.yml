@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Discord Server
+  - name: 📥 Installation guide
+    url: https://github.com/SpaceTheme/Steam-Custom-Artworks#readme
+    about: How to install the artworks into your Steam library.
+  - name: 💬 Discord Server
     url: https://discord.spacetheme.net
-    about: For simple questions
+    about: For questions and help.
