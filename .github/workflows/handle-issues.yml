@@ -12,8 +12,8 @@ permissions:
 
 env:
   # Comma-separated GitHub usernames
-  MAINTAINERS: SpaceEnergy,noxygalaxy # may run /process
-  TRUSTED_REQUESTERS: SpaceEnergy,noxygalaxy,nomd346,theygotti # requests are processed automatically
+  MAINTAINERS: SpaceEnergy,noxygalaxy # may run /process on any request
+  TRUSTED_REQUESTERS: SpaceEnergy,noxygalaxy,nomd346,theygotti # may run /process on their own open requests
 
 jobs:
   triage:

@@ -1,7 +1,7 @@
 'use strict';
 
 const { problem } = require('./request');
-const { fetchAppInfo, applyOverrides } = require('./steam');
+const { fetchAppInfo, applyOverrides, steamDbUrl } = require('./steam');
 const { fetchHero, heroProblems } = require('./steamgriddb');
 
 // Validates a parsed request against Steam and SteamGridDB.
@@ -46,8 +46,10 @@ async function checkRequest(request, { steamGridDbKey, strict = false } = {}) {
   if (meta && !meta.publisher.value) {
     problems.push(problem('Publisher', 'Neither the Steam Store nor SteamDB list a publisher or developer for this game. This usually happens when a game was removed from Steam.', `Look up the publisher (e.g. on [SteamDB](https://steamdb.info/app/${request.appId}/info/), Wikipedia or the game's website) and enter it in the **Publisher (optional)** field.`));
   }
+  // SteamDB's "First seen on SteamDB" date can't be read automatically (SteamDB blocks bots),
+  // so the requester copies it from the SteamDB page.
   if (meta && !meta.release.value) {
-    warnings.push('No release date found, so the artwork will show "Unknown". You can add it in the **Release date (optional)** field.');
+    problems.push(problem('Release date', 'Neither the Steam Store nor SteamDB list a release date for this game.', `Open the game on [SteamDB](${steamDbUrl(request.appId)}), copy the date shown as **First seen on SteamDB** and enter it in the **Release date (optional)** field. You can paste it exactly as SteamDB shows it.`));
   }
   if (info && info.warnings.length) {
     warnings.push(...info.warnings.map(w => `Partial Steam data: ${w}.`));

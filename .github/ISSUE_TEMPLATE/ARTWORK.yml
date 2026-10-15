@@ -13,21 +13,10 @@ body:
 
         Game name, publisher and release date are filled in automatically from the Steam Store and SteamDB.
         Within a minute of submitting, a bot checks your request and tells you if anything needs to be fixed.
+        After that, a maintainer reviews the request and starts it. Until then you can still edit it.
 
         > [!TIP]
         > You don't need to change the title. It is set automatically.
-
-  - type: dropdown
-    id: request_type
-    attributes:
-      label: Request type
-      description: Choose **Replace** if the game already has an artwork and you want a different image.
-      options:
-        - New artwork
-        - Replace existing artwork
-      default: 0
-    validations:
-      required: true
 
   - type: input
     id: app_id
@@ -90,13 +79,5 @@ body:
     id: release
     attributes:
       label: Release date (optional)
-      description: "Format: `Mon D, YYYY`"
+      description: "If the bot can't find one: copy the date shown as **First seen on SteamDB** from the game's SteamDB page. Any format like `Jul 9, 2013` or `16 November 2018` works."
       placeholder: "Jul 9, 2013"
-
-  - type: checkboxes
-    id: checks
-    attributes:
-      label: Before you submit
-      options:
-        - label: I searched the [existing requests](https://github.com/SpaceTheme/Steam-Custom-Artworks/issues?q=is%3Aissue+label%3Arequest) and this game hasn't been requested yet (or I want to replace its image).
-          required: true

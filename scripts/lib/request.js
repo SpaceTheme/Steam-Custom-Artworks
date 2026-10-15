@@ -3,7 +3,6 @@
 // Parses the issue body produced by .github/ISSUE_TEMPLATE/ARTWORK.yml.
 // The labels below must match the field labels in that template exactly.
 const LABELS = {
-  type: 'Request type',
   appId: 'App ID',
   imageUrl: 'Image URL',
   name: 'Game name (optional)',
@@ -95,7 +94,6 @@ function parseRequest(body) {
   if (hero.error) errors.push(hero.error);
 
   return {
-    type: /replace/i.test(sections[LABELS.type] || '') ? 'replace' : 'new',
     appId: appId.value || null,
     heroId: hero.value || null,
     imageUrl: hero.url || null,

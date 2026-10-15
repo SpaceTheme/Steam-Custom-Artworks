@@ -2,15 +2,21 @@
 
 // Looks up name, publisher and release date of a Steam app.
 //
-// 1. Steam Store API  - the normal source, but empty for apps that were removed
+// 1. Steam Store API     - the normal source, but empty for apps that were removed
 //    from the store (no publisher, no release date, or no data at all).
-// 2. SteamDB / PICS   - the raw app info from Steam's backend, which is what
+// 2. Steam store browse  - IStoreBrowseService, often still knows the publisher of
+//    removed apps.
+// 3. SteamDB / PICS      - the raw app info from Steam's backend, which is what
 //    steamdb.info/app/<id>/info shows. SteamDB itself blocks automated requests
 //    (Cloudflare), so the same data is read from api.steamcmd.net.
+//
+// SteamDB's "First seen on SteamDB" date is SteamDB's own record and not part of any
+// API, so when no source has a release date the bot asks for it (see checks.js).
 //
 // Usage for testing: node scripts/lib/steam.js 3970
 
 const STORE_API = 'https://store.steampowered.com/api/appdetails';
+const BROWSE_API = 'https://api.steampowered.com/IStoreBrowseService/GetItems/v1/';
 const PICS_API = 'https://api.steamcmd.net/v1/info/';
 const USER_AGENT = 'Steam-Custom-Artworks (+https://github.com/SpaceTheme/Steam-Custom-Artworks)';
 
@@ -43,6 +49,18 @@ function formatTimestamp(seconds) {
   });
 }
 
+// Brings dates typed into the issue into the artwork format "Nov 16, 2018", e.g. SteamDB's
+// "16 November 2018 – 18:40:58 UTC" or "2018-11-16". Anything without a day ("Nov 2018",
+// "2018", "Q1 2027") is kept as typed.
+function normalizeDate(value) {
+  const date = clean(value).split(/\s[–—-]\s/)[0].replace(/\bUTC\b/i, '').trim();
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const full = /[a-z]{3,}/i.test(date) && /\b\d{1,2}(st|nd|rd|th)?\b/i.test(date) && /\b\d{4}\b/.test(date);
+  if (!iso && !full) return clean(value);
+  const ms = Date.parse(`${date.replace(/(\d)(st|nd|rd|th)\b/i, '$1')} UTC`);
+  return Number.isNaN(ms) ? clean(value) : formatTimestamp(ms / 1000);
+}
+
 async function fetchStore(appId) {
   const json = await getJson(`${STORE_API}?appids=${appId}&l=english&cc=us`);
   const entry = json && json[appId];
@@ -53,6 +71,27 @@ async function fetchStore(appId) {
     publisher: firstName(data.publishers),
     developer: firstName(data.developers),
     release: clean(data.release_date && data.release_date.date),
+  };
+}
+
+async function fetchStoreBrowse(appId) {
+  const input = {
+    ids: [{ appid: Number(appId) }],
+    context: { language: 'english', country_code: 'US' },
+    data_request: { include_release: true, include_basic_info: true },
+  };
+  const json = await getJson(`${BROWSE_API}?input_json=${encodeURIComponent(JSON.stringify(input))}`);
+  const item = json && json.response && json.response.store_items && json.response.store_items[0];
+  if (!item || item.success !== 1 || !clean(item.name)) return null;
+  const names = list => firstName((Array.isArray(list) ? list : []).map(entry => entry && entry.name));
+  const basic = item.basic_info || {};
+  const release = item.release || {};
+  const timestamp = Number(release.original_release_date || release.steam_release_date);
+  return {
+    name: clean(item.name),
+    publisher: names(basic.publishers),
+    developer: names(basic.developers),
+    release: timestamp > 0 ? formatTimestamp(timestamp) : '',
   };
 }
 
@@ -77,29 +116,39 @@ function pick(...candidates) {
 
 // Returns null if the app doesn't exist, throws if neither source could be reached.
 async function fetchAppInfo(appId) {
-  const [storeResult, picsResult] = await Promise.allSettled([fetchStore(appId), fetchPics(appId)]);
-  const store = storeResult.status === 'fulfilled' ? storeResult.value : null;
-  const pics = picsResult.status === 'fulfilled' ? picsResult.value : null;
-  const failures = [storeResult, picsResult].filter(r => r.status === 'rejected').map(r => r.reason.message);
+  const results = await Promise.allSettled([fetchStore(appId), fetchStoreBrowse(appId), fetchPics(appId)]);
+  const [store, browse, pics] = results.map(r => (r.status === 'fulfilled' ? r.value : null));
+  const failures = results.filter(r => r.status === 'rejected').map(r => r.reason.message);
 
-  if (!store && !pics) {
+  if (!store && !browse && !pics) {
     if (failures.length) throw new Error(`Could not reach Steam (${failures.join('; ')})`);
     return null;
   }
 
   const s = store || {};
+  const b = browse || {};
   const p = pics || {};
   return {
     appId: String(appId),
-    name: pick({ value: s.name, source: SOURCE.store }, { value: p.name, source: SOURCE.steamdb }),
+    name: pick(
+      { value: s.name, source: SOURCE.store },
+      { value: b.name, source: SOURCE.store },
+      { value: p.name, source: SOURCE.steamdb },
+    ),
     // Self-published games often only list a developer.
     publisher: pick(
       { value: s.publisher, source: SOURCE.store },
+      { value: b.publisher, source: SOURCE.store },
       { value: p.publisher, source: SOURCE.steamdb },
       { value: s.developer, source: `${SOURCE.store}, developer` },
+      { value: b.developer, source: `${SOURCE.store}, developer` },
       { value: p.developer, source: `${SOURCE.steamdb}, developer` },
     ),
-    release: pick({ value: s.release, source: SOURCE.store }, { value: p.release, source: SOURCE.steamdb }),
+    release: pick(
+      { value: s.release, source: SOURCE.store },
+      { value: b.release, source: SOURCE.store },
+      { value: p.release, source: SOURCE.steamdb },
+    ),
     warnings: failures,
   };
 }
@@ -107,12 +156,18 @@ async function fetchAppInfo(appId) {
 function applyOverrides(info, overrides = {}) {
   const result = { ...info };
   for (const key of ['name', 'publisher', 'release']) {
-    if (overrides[key]) result[key] = { value: overrides[key], source: SOURCE.issue };
+    if (!overrides[key]) continue;
+    const value = key === 'release' ? normalizeDate(overrides[key]) : overrides[key];
+    result[key] = { value, source: SOURCE.issue };
   }
   return result;
 }
 
-module.exports = { fetchAppInfo, applyOverrides, SOURCE };
+function steamDbUrl(appId) {
+  return `https://steamdb.info/app/${appId}/`;
+}
+
+module.exports = { fetchAppInfo, applyOverrides, normalizeDate, steamDbUrl, SOURCE };
 
 if (require.main === module) {
   const appId = process.argv[2];
