@@ -43,31 +43,18 @@ jobs:
           STEAMGRIDDB_API_KEY: ${{ secrets.STEAMGRIDDB_API_KEY }}
         run: node scripts/process-issue.js request.json result.json
 
+      - name: Update plugin manifest
+        if: steps.build.outputs.ok == 'true'
+        run: node scripts/build-manifest.js
+
       - name: Commit and push
         id: push
         if: steps.build.outputs.ok == 'true'
         env:
           APP_ID: ${{ steps.build.outputs.app_id }}
-        run: |
-          git config user.name "GitHub Action"
-          git config user.email "action@github.com"
-          git add -A artworks/
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          # The weekly release collects app IDs from "Add artwork for app <id>" commit messages.
-          git commit -m "Add artwork for app ${APP_ID} (#${ISSUE_NUMBER})"
-          for i in $(seq 1 10); do
-            if git pull --rebase origin main && git push origin HEAD:main; then
-              echo "Pushed on attempt $i"
-              exit 0
-            fi
-            git rebase --abort 2>/dev/null || true
-            sleep $((i * 5))
-          done
-          echo "::error::Failed to push after 10 attempts"
-          exit 1
+        # The artwork and artworks/manifest.json in one commit.
+        # The weekly release collects app IDs from "Add artwork for app <id>" commit messages.
+        run: scripts/push-changes.sh "Add artwork for app ${APP_ID} (#${ISSUE_NUMBER})"
 
       - name: Report result on issue
         if: always()

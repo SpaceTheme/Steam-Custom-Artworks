@@ -1,0 +1,40 @@
+name: Update Plugin Manifest
+
+# Rebuilds artworks/manifest.json when artworks or the template are changed by hand
+# (e.g. a deleted folder or a new color in templates/). Requests update it themselves in
+# process-issue.yml. Commits made with GITHUB_TOKEN don't trigger workflows, so this can't loop.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'artworks/**'
+      - 'templates/**'
+      - 'scripts/build-manifest.js'
+      - '!artworks/manifest.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-manifest
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Build manifest
+        run: node scripts/build-manifest.js
+
+      - name: Commit and push
+        run: scripts/push-changes.sh "Update plugin manifest"

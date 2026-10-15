@@ -75,7 +75,7 @@ function accepted(request, meta, warnings, { canProcess = false, duplicates = []
       ? '2. Everything correct? Comment **`/process`** to start.'
       : '2. A maintainer reviews your request and starts it.',
     '3. The artwork is added to the repository and this issue gets closed.',
-    '4. It is included in the next weekly release (every Sunday): download `grid.zip` from [Releases](https://github.com/SpaceTheme/Steam-Custom-Artworks/releases) or use the Millennium plugin.',
+    '4. The [Millennium plugin](https://github.com/SpaceTheme/Steam-Custom-Artworks-Plugin) installs it on its next check (at Steam start and every 6 hours).',
   ].join('\n');
 }
 
@@ -88,7 +88,7 @@ function processed(request, result) {
   if (result.replaced.length) {
     lines.push('', `Replaced the previous artwork: ${result.replaced.map(d => `\`${d}\``).join(', ')}`);
   }
-  lines.push('', 'It will be included in the next weekly release (every Sunday). Thanks for contributing! 💜');
+  lines.push('', 'The [Millennium plugin](https://github.com/SpaceTheme/Steam-Custom-Artworks-Plugin) installs it on its next check (at Steam start and every 6 hours). Thanks for contributing! 💜');
   return lines.join('\n');
 }
 
