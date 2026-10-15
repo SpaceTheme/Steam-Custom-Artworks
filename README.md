@@ -21,13 +21,6 @@ Important: If the extracted files are inside another `grid` folder (i.e., `grid/
 To request/replace artwork for a game or software, [click here to open a new issue](https://github.com/SpaceTheme/Steam-Custom-Artworks/issues/new?template=ARTWORK.yml) and fill out the required information.<br>
 You only need the Steam App ID and a SteamGridDB hero link. Name, publisher and release date are taken from the Steam Store or SteamDB. A bot checks your request within a minute and tells you if something needs to be fixed.
 
-## 🎯 Roadmap
-- [x] Add transparent logo
-- [ ] Improve resolution of (p) grids
-- [x] Automatically delete game_ids.txt after each release to ensure only new games appear in the next release
-- [ ] Millennium plugin for auto update
-- [x] Add theme option to ensure the header scales correctly across all sizes
-
 ## 🙌 Contributors
 - [@SpaceEnergy](https://github.com/SpaceEnergy) - Idea & Design  
 - [@noxygalaxy](https://github.com/noxygalaxy) - Workflow Automation
