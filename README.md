@@ -1,6 +1,6 @@
 # Steam-Custom-Artworks
 
-![Banner](/.github/assets/banner.png)
+![Banner](/.github/assets/banner.webp)
 
 ## 🤷‍♂️ What is Steam-Custom-Artworks?
 Steam-Custom-Artworks is a collection of custom game artworks made to replace the default ones in your Steam library - but with a twist: everything is designed in the same style.
