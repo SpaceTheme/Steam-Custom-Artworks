@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { parseRequest } = require('./lib/request');
 const { checkRequest } = require('./lib/checks');
+const { SOURCE } = require('./lib/steam');
 const comments = require('./lib/comments');
 
 const NEEDS_CHANGES = 'needs changes';
@@ -90,6 +91,22 @@ async function findOtherOpenRequests(github, context, appId, issueNumber) {
     .map(other => other.number);
 }
 
+// Why a trusted request can't start by itself. Only requests whose details all come straight
+// from the Steam Store, with a checked image, start automatically; anything from SteamDB, a
+// developer used as publisher, an issue override or an unreachable service needs a look first.
+function autoProcessBlockers(meta, hero, warnings) {
+  const blockers = [];
+  if (warnings.length) blockers.push('Not every service could be checked.');
+  if (!hero) blockers.push('The image could not be checked on SteamGridDB.');
+  const labels = { name: 'Game name', publisher: 'Publisher', release: 'Release date' };
+  for (const [key, label] of Object.entries(labels)) {
+    const field = meta && meta[key];
+    if (!field || !field.value) blockers.push(`No ${label.toLowerCase()} was found.`);
+    else if (field.source !== SOURCE.store) blockers.push(`The ${label.toLowerCase()} comes from ${field.source}, not the Steam Store.`);
+  }
+  return blockers;
+}
+
 function dispatchProcessing(github, context, issueNumber) {
   return github.rest.repos.createDispatchEvent({
     ...context.repo,
@@ -109,7 +126,7 @@ async function triage({ github, context, core }) {
 
   const api = issueApi(github, context, issue.number);
   const request = await withRequestType(github, context, parseRequest(issue.body));
-  const [{ meta, problems, warnings }, duplicates] = await Promise.all([
+  const [{ meta, hero, problems, warnings }, duplicates] = await Promise.all([
     checkRequest(request, { steamGridDbKey: process.env.STEAMGRIDDB_API_KEY }),
     findOtherOpenRequests(github, context, request.appId, issue.number),
   ]);
@@ -124,11 +141,17 @@ async function triage({ github, context, core }) {
     return core.notice(`Request #${issue.number} needs changes: ${problems.map(p => p.message).join(' | ')}`);
   }
 
-  // Nothing is processed automatically: the request waits for /process, so it can still be edited.
   if (labels.includes(NEEDS_CHANGES)) await api.removeLabel(NEEDS_CHANGES);
   // With other open requests for the same game, only a maintainer decides which one is processed.
   const canProcess = isIn('TRUSTED_REQUESTERS', issue.user.login) && !duplicates.length;
-  await api.triageComment(comments.accepted(request, meta, warnings, { canProcess, duplicates }));
+  // Trusted requests with pure Steam Store data start right away; everything else waits for /process.
+  const blockers = canProcess ? autoProcessBlockers(meta, hero, warnings) : [];
+  const autoProcess = canProcess && !blockers.length;
+  await api.triageComment(comments.accepted(request, meta, warnings, { canProcess, autoProcess, blockers, duplicates }));
+  if (autoProcess) {
+    await dispatchProcessing(github, context, issue.number);
+    core.notice(`Request #${issue.number} only uses Steam Store data, processing started automatically.`);
+  }
 }
 
 // issue_comment: created, comment starting with /process

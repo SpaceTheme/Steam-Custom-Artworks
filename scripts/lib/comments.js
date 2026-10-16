@@ -59,7 +59,19 @@ function needsChanges(problems, warnings = [], { duplicates = [] } = {}) {
   ].join('\n');
 }
 
-function accepted(request, meta, warnings, { canProcess = false, duplicates = [] } = {}) {
+function accepted(request, meta, warnings, { canProcess = false, autoProcess = false, blockers = [], duplicates = [] } = {}) {
+  if (autoProcess) {
+    return [
+      '### ✅ Thanks for your request!',
+      '',
+      'This is what we found:',
+      '',
+      detailsTable(request, meta),
+      '',
+      'All details come from the Steam Store, so **processing started automatically**. This issue gets closed once the artwork is added.',
+      'The [Millennium plugin](https://github.com/SpaceTheme/Steam-Custom-Artworks-Plugin) installs it on its next check (at Steam start and every 6 hours).',
+    ].join('\n');
+  }
   return [
     '### ✅ Thanks for your request!',
     '',
@@ -72,7 +84,7 @@ function accepted(request, meta, warnings, { canProcess = false, duplicates = []
     '**What happens next?**',
     '1. Check the details above. Something wrong or missing? **Edit your issue** and fill in the optional fields. They override the data from Steam, and this summary updates automatically.',
     canProcess
-      ? '2. Everything correct? Comment **`/process`** to start.'
+      ? `2. Everything correct? Comment **\`/process\`** to start. It didn't start automatically because:\n${blockers.map(b => `   - ${b}`).join('\n')}`
       : '2. A maintainer reviews your request and starts it.',
     '3. The artwork is added to the repository and this issue gets closed.',
     '4. The [Millennium plugin](https://github.com/SpaceTheme/Steam-Custom-Artworks-Plugin) installs it on its next check (at Steam start and every 6 hours).',
