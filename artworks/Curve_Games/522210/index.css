@@ -1,3 +1,11 @@
+/* Colors can be changed by the Millennium plugin (templates/colors.json) */
+:root {
+    --artwork-background: #CCC1A1;
+    --artwork-text: #161616;    /* title, publisher and date */
+    --artwork-divider: #161616; /* line between title and image */
+    --artwork-shadow: #161616;  /* offset shadow under the image */
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -15,7 +23,7 @@ body {
     gap: 48px;
     padding: 48px;
     font-family: "Be Vietnam Pro", serif;
-    color: #161616;
+    color: var(--artwork-text);
 }
 
 
@@ -26,7 +34,7 @@ body {
     width: 100%;
     height: 100%;
     padding: 42px;
-    background: #CCC1A1;
+    background: var(--artwork-background);
 }
 .artwork#grid {
     gap: 12px;
@@ -76,7 +84,7 @@ h1 {
     height: 6px;
     min-height: 6px;
     border-radius: 100px;
-    background: #161616;
+    background: var(--artwork-divider);
 }
 #p .divider {
     width: 6px;
@@ -93,7 +101,7 @@ h1 {
 img {
     object-fit: cover;
     border-radius: 32px;
-    box-shadow: 10px 10px 0 0 #161616;
+    box-shadow: 10px 10px 0 0 var(--artwork-shadow);
 }
 #grid img {
     width: 100%;
@@ -107,7 +115,7 @@ img {
     width: 1080px;
     height: 100%;
     border-radius: 64px;
-    box-shadow: 20px 20px 0 0 #161616;
+    box-shadow: 20px 20px 0 0 var(--artwork-shadow);
 }
 
 
